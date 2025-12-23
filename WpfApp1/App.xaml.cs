@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
+using VodafoneLogin.Data;
 using VodafoneLogin.Services;
 using VodafoneLogin.ViewModels;
 
@@ -12,7 +14,7 @@ namespace VodafoneLogin
     {
         private ServiceProvider? _serviceProvider;
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
@@ -21,19 +23,33 @@ namespace VodafoneLogin
 
             _serviceProvider = serviceCollection.BuildServiceProvider();
 
+            // Ensure database is created
+            var dataService = _serviceProvider.GetRequiredService<IDataService>();
+            await dataService.EnsureDatabaseCreatedAsync();
+
+            // Load initial data for PhoneOffersViewModel
+            var phoneOffersViewModel = _serviceProvider.GetRequiredService<PhoneOffersViewModel>();
+            await phoneOffersViewModel.LoadDataAsync();
+
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
         }
 
         private void ConfigureServices(IServiceCollection services)
         {
+            // Register DbContext
+            services.AddDbContextFactory<AppDbContext>(options =>
+                options.UseSqlite("Data Source=vodafone.db"));
+
             // Register services
             services.AddSingleton<IFileService, FileService>();
             services.AddSingleton<IWebViewService, WebViewService>();
+            services.AddSingleton<IDataService, DataService>();
             services.AddSingleton<IPhoneSearchService, PhoneSearchService>();
 
             // Register ViewModels
             services.AddTransient<MainWindowViewModel>();
+            services.AddTransient<PhoneOffersViewModel>();
 
             // Register Views
             services.AddTransient<MainWindow>();

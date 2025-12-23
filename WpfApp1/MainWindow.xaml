@@ -14,10 +14,121 @@
             <!-- status -->
         </Grid.RowDefinitions>
 
-        <!-- WebView2 -->
-        <wv2:WebView2 x:Name="webView"
-                      Grid.Row="0"
-                      NavigationCompleted="webView_NavigationCompleted"/>
+        <!-- TabControl for WebView and Data -->
+        <TabControl x:Name="tabControl" Grid.Row="0">
+            <TabItem Header="WebView">
+                <wv2:WebView2 x:Name="webView"
+                              NavigationCompleted="webView_NavigationCompleted"/>
+            </TabItem>
+            <TabItem Header="Phone Offers" x:Name="phoneOffersTab">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Filters -->
+                    <Border Grid.Row="0" Background="#F0F0F0" Padding="10" Margin="5">
+                        <StackPanel>
+                            <TextBlock Text="Фильтры" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBox Grid.Column="0" 
+                                         Text="{Binding PhoneFilter, UpdateSourceTrigger=PropertyChanged}" 
+                                         Margin="0,0,10,0"
+                                         Padding="5">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="Tag" Value="Поиск по номеру..."/>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                                
+                                <CheckBox Grid.Column="1" 
+                                          Content="Со скидкой" 
+                                          IsChecked="{Binding HasDiscount, TargetNullValue=False}"
+                                          Margin="5,0"/>
+                                
+                                <CheckBox Grid.Column="2" 
+                                          Content="С подарком" 
+                                          IsChecked="{Binding HasGift, TargetNullValue=False}"
+                                          Margin="5,0"/>
+                                
+                                <Button Grid.Column="3" 
+                                        Content="Применить" 
+                                        Command="{Binding ApplyFilterCommand}"
+                                        Margin="5,0" Padding="10,5"/>
+                                
+                                <Button Grid.Column="4" 
+                                        Content="Очистить" 
+                                        Command="{Binding ClearFilterCommand}"
+                                        Margin="5,0" Padding="10,5"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- DataGrid -->
+                    <DataGrid Grid.Row="1" 
+                              ItemsSource="{Binding PhoneOffers}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              GridLinesVisibility="All"
+                              HeadersVisibility="Column"
+                              Margin="5">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                            <DataGridTextColumn Header="Номер телефона" Binding="{Binding PhoneNumber}" Width="150"/>
+                            <DataGridTextColumn Header="Скидка %" Binding="{Binding DiscountPercent}" Width="80"/>
+                            <DataGridTextColumn Header="Мин. пополнение" Binding="{Binding MinTopupAmount, StringFormat='{}{0:F2} грн'}" Width="120"/>
+                            <DataGridTextColumn Header="Подарок" Binding="{Binding GiftAmount, StringFormat='{}{0:F2} грн'}" Width="100"/>
+                            <DataGridTextColumn Header="Дней действия" Binding="{Binding ActiveDays}" Width="100"/>
+                            <DataGridTextColumn Header="Действует до" Binding="{Binding ValidUntil, StringFormat='{}{0:yyyy-MM-dd}'}" Width="120"/>
+                            <DataGridTextColumn Header="Создано" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    
+                    <!-- Pagination -->
+                    <Border Grid.Row="2" Background="#F0F0F0" Padding="10" Margin="5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBlock Grid.Column="0" 
+                                       Text="{Binding PageInfo}" 
+                                       VerticalAlignment="Center"/>
+                            
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Content="&lt;&lt;" 
+                                        Command="{Binding FirstPageCommand}" 
+                                        Margin="2" Padding="10,5"/>
+                                <Button Content="&lt;" 
+                                        Command="{Binding PreviousPageCommand}" 
+                                        Margin="2" Padding="10,5"/>
+                                <Button Content="&gt;" 
+                                        Command="{Binding NextPageCommand}" 
+                                        Margin="2" Padding="10,5"/>
+                                <Button Content="&gt;&gt;" 
+                                        Command="{Binding LastPageCommand}" 
+                                        Margin="2" Padding="10,5"/>
+                                <Button Content="Обновить" 
+                                        Command="{Binding LoadDataCommand}" 
+                                        Margin="2" Padding="10,5"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
 
         <!-- Settings -->
         <Grid Grid.Row="1" Background="#EEE">

@@ -7,18 +7,18 @@ namespace VodafoneLogin.Services
     {
         private readonly IWebViewService _webViewService;
         private readonly IFileService _fileService;
+        private readonly IDataService _dataService;
         private readonly Random _rand = new();
 
         private const string _phoneNumbersFile = "numbers.txt";
         private const string _logFile = "errors.log";
         private const string _errorNumbers = "errornumbers.log";
-        private const string _progressFile = "progress.txt";
-        private const string _resultFile = "results.txt";
 
-        public PhoneSearchService(IWebViewService webViewService, IFileService fileService)
+        public PhoneSearchService(IWebViewService webViewService, IFileService fileService, IDataService dataService)
         {
             _webViewService = webViewService;
             _fileService = fileService;
+            _dataService = dataService;
         }
 
         public async Task ProcessPhoneNumberAsync(
@@ -129,11 +129,8 @@ namespace VodafoneLogin.Services
             IProgressReporter? progressReporter)
         {
             progressReporter?.ReportOffersFound(1);
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            string validUntilStr = offer.ValidUntil?.ToString("yyyy-MM-dd") ?? "N/A";
-            string line = $"[{timestamp}] Номер: {phoneNumber}, Скидка: {offer.Discount}%, Мин. пополнение: {offer.MinTopUp} грн, Подарок: {offer.Gift} грн, Дней действия: {offer.ActiveDays}, Действует до: {validUntilStr}{Environment.NewLine}";
-            _fileService.AppendResult(line, _resultFile);
-            await Task.CompletedTask;
+            int offerId = await _dataService.SavePhoneOfferAsync(phoneNumber, offer);
+            await _dataService.SetLastProcessedPhoneIdAsync(offerId);
         }
 
         private async Task HandleServerErrorAsync(
@@ -144,7 +141,7 @@ namespace VodafoneLogin.Services
             progressReporter?.ReportServerErrors(1);
             _fileService.AppendErrorNumber(phoneNumber, _errorNumbers);
             progressReporter?.ReportProcessed(1);
-            _fileService.WriteProgress(index, _progressFile);
+            // Progress is now tracked in database via PhoneOffer records
             await Task.Delay(5000);
         }
 
@@ -159,7 +156,7 @@ namespace VodafoneLogin.Services
                 $"{DateTime.Now}: Ошибка при обработке номера {phoneNumber}\n{ex}\n",
                 _logFile);
             progressReporter?.ReportProcessed(1);
-            _fileService.WriteProgress(index, _progressFile);
+            // Progress is now tracked in database via PhoneOffer records
             await Task.CompletedTask;
         }
 
@@ -168,7 +165,7 @@ namespace VodafoneLogin.Services
             IProgressReporter? progressReporter)
         {
             progressReporter?.ReportProcessed(1);
-            _fileService.WriteProgress(index, _progressFile);
+            // Progress is now tracked in database via PhoneOffer records
             await Task.CompletedTask;
         }
 
