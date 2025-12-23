@@ -1,11 +1,12 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using VodafoneLogin.Models;
 using VodafoneLogin.Services;
 
 namespace VodafoneLogin.ViewModels
 {
-    public class MainWindowViewModel : INotifyPropertyChanged
+    public class MainWindowViewModel : INotifyPropertyChanged, IProgressReporter
     {
         private readonly IFileService _fileService;
         private readonly IWebViewService _webViewService;
@@ -206,28 +207,68 @@ namespace VodafoneLogin.ViewModels
 
             int lastProcessedIndex = _fileService.ReadProgress(_progressFile);
 
+            var configuration = new ProcessingConfiguration
+            {
+                DelayInputMin = DelayInputMin,
+                DelayInputMax = DelayInputMax,
+                DelaySearchMin = DelaySearchMin,
+                DelaySearchMax = DelaySearchMax,
+                DelayNextMin = DelayNextMin,
+                DelayNextMax = DelayNextMax
+            };
+
             for (int i = lastProcessedIndex + 1; i < phoneNumbers.Count; i++)
             {
                 var number = phoneNumbers[i];
-                await _phoneSearchService.ProcessPhoneNumberAsync(
-                    number,
-                    i,
-                    DelayInputMin,
-                    DelayInputMax,
-                    DelaySearchMin,
-                    DelaySearchMax,
-                    DelayNextMin,
-                    DelayNextMax,
-                    progress => ProgressInput = progress,
-                    progress => ProgressSearch = progress,
-                    progress => ProgressNext = progress,
-                    number => CurrentNumber = number,
-                    count => ProcessedCount += count,
-                    count => OffersFoundCount += count,
-                    count => ServerErrors += count);
+                
+                // Update configuration from current slider values (in case user changed them)
+                configuration.DelayInputMin = DelayInputMin;
+                configuration.DelayInputMax = DelayInputMax;
+                configuration.DelaySearchMin = DelaySearchMin;
+                configuration.DelaySearchMax = DelaySearchMax;
+                configuration.DelayNextMin = DelayNextMin;
+                configuration.DelayNextMax = DelayNextMax;
+
+                await _phoneSearchService.ProcessPhoneNumberAsync(number, i, configuration, this);
             }
 
             System.Windows.MessageBox.Show("Обработка завершена", "^_^", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
+
+        // IProgressReporter implementation
+        public void ReportInputProgress(double progress)
+        {
+            ProgressInput = progress;
+        }
+
+        public void ReportSearchProgress(double progress)
+        {
+            ProgressSearch = progress;
+        }
+
+        public void ReportNextProgress(double progress)
+        {
+            ProgressNext = progress;
+        }
+
+        public void ReportCurrentNumber(string phoneNumber)
+        {
+            CurrentNumber = phoneNumber;
+        }
+
+        public void ReportProcessed(int count)
+        {
+            ProcessedCount += count;
+        }
+
+        public void ReportOffersFound(int count)
+        {
+            OffersFoundCount += count;
+        }
+
+        public void ReportServerErrors(int count)
+        {
+            ServerErrors += count;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
