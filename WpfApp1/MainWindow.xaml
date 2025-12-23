@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-        Title="Vodafone Login" Height="800" Width="1000">
+        Title="Vodafone Login" Height="800" Width="1000"
+        Loaded="Window_Loaded">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -30,72 +31,72 @@
             <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="10,0">
                 <TextBlock Text="Ввод номера (сек)" HorizontalAlignment="Center"/>
                 <TextBlock Text="Мин" HorizontalAlignment="Center"/>
-                <Slider x:Name="DelayInputMin" Minimum="0" Maximum="60" Value="3"/>
-                <TextBlock Text="{Binding ElementName=DelayInputMin, Path=Value, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
+                <Slider Minimum="0" Maximum="60" Value="{Binding DelayInputMin, Mode=TwoWay}"/>
+                <TextBlock Text="{Binding DelayInputMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
                 <TextBlock Text="Макс" HorizontalAlignment="Center"/>
-                <Slider x:Name="DelayInputMax" Minimum="0" Maximum="60" Value="5"/>
-                <TextBlock Text="{Binding ElementName=DelayInputMax, Path=Value, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
+                <Slider Minimum="0" Maximum="60" Value="{Binding DelayInputMax, Mode=TwoWay}"/>
+                <TextBlock Text="{Binding DelayInputMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
 
                 <!-- Прогресс бар -->
-                <ProgressBar x:Name="ProgressInput" Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0" Value="{Binding ProgressInput}"/>
             </StackPanel>
 
             <!-- Нажатие на поиск -->
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
                 <TextBlock Text="Нажатие на поиск (сек)" HorizontalAlignment="Center"/>
                 <TextBlock Text="Мин" HorizontalAlignment="Center"/>
-                <Slider x:Name="DelaySearchMin" Minimum="0" Maximum="60" Value="3"/>
-                <TextBlock Text="{Binding ElementName=DelaySearchMin, Path=Value, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
+                <Slider Minimum="0" Maximum="60" Value="{Binding DelaySearchMin, Mode=TwoWay}"/>
+                <TextBlock Text="{Binding DelaySearchMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
                 <TextBlock Text="Макс" HorizontalAlignment="Center"/>
-                <Slider x:Name="DelaySearchMax" Minimum="0" Maximum="60" Value="5"/>
-                <TextBlock Text="{Binding ElementName=DelaySearchMax, Path=Value, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
+                <Slider Minimum="0" Maximum="60" Value="{Binding DelaySearchMax, Mode=TwoWay}"/>
+                <TextBlock Text="{Binding DelaySearchMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
 
                 <!-- Прогресс бар -->
-                <ProgressBar x:Name="ProgressSearch" Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0" Value="{Binding ProgressSearch}"/>
             </StackPanel>
 
             <!-- Следующий номер -->
             <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="10,0">
                 <TextBlock Text="Следующий номер (сек)" HorizontalAlignment="Center"/>
                 <TextBlock Text="Мин" HorizontalAlignment="Center"/>
-                <Slider x:Name="DelayNextMin" Minimum="0" Maximum="60" Value="3"/>
-                <TextBlock Text="{Binding ElementName=DelayNextMin, Path=Value, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
+                <Slider Minimum="0" Maximum="60" Value="{Binding DelayNextMin, Mode=TwoWay}"/>
+                <TextBlock Text="{Binding DelayNextMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
                 <TextBlock Text="Макс" HorizontalAlignment="Center"/>
-                <Slider x:Name="DelayNextMax" Minimum="0" Maximum="60" Value="5"/>
-                <TextBlock Text="{Binding ElementName=DelayNextMax, Path=Value, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
+                <Slider Minimum="0" Maximum="60" Value="{Binding DelayNextMax, Mode=TwoWay}"/>
+                <TextBlock Text="{Binding DelayNextMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
 
                 <!-- Прогресс бар -->
-                <ProgressBar x:Name="ProgressNext" Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0" Value="{Binding ProgressNext}"/>
             </StackPanel>
         </Grid>
         <!-- Status -->
         <StatusBar Grid.Row="2" VerticalAlignment="Bottom" FontSize="16">
             <StatusBarItem>
-                <TextBlock x:Name="txtTotalNumbers" Text="Всего номеров: 0" />
+                <TextBlock Text="{Binding TotalNumbers, StringFormat='Всего номеров: {0}'}" />
             </StatusBarItem>
 
             <Separator Width="10"/>
 
             <StatusBarItem>
-                <TextBlock x:Name="txtProcessed" Text="Обработано: 0" />
+                <TextBlock Text="{Binding ProcessedCount, StringFormat='Обработано: {0}'}" />
             </StatusBarItem>
 
             <Separator Width="10"/>
 
             <StatusBarItem>
-                <TextBlock x:Name="txtCurrentNumber" Text="Текущий номер: -" />
+                <TextBlock Text="{Binding CurrentNumber, StringFormat='Текущий номер: {0}'}" />
             </StatusBarItem>
 
             <Separator Width="10"/>
 
             <StatusBarItem>
-                <TextBlock x:Name="txtOffersFound" Text="Найдено предложений: 0" />
+                <TextBlock Text="{Binding OffersFoundCount, StringFormat='Найдено предложений: {0}'}" />
             </StatusBarItem>
 
             <Separator Width="10"/>
 
             <StatusBarItem>
-                <TextBlock x:Name="txtServerErrors" Text="Ошибки: 0" />
+                <TextBlock Text="{Binding ServerErrors, StringFormat='Ошибки: {0}'}" />
             </StatusBarItem>
         </StatusBar>
     </Grid>
