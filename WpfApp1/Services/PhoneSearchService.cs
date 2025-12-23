@@ -111,7 +111,9 @@ namespace VodafoneLogin.Services
 
             string rawOffersJson = await _webViewService.GetOffersJsonAsync();
             string offersJson = JsonSerializer.Deserialize<string>(rawOffersJson) ?? "[]";
-            var offers = JsonSerializer.Deserialize<List<Offer>>(offersJson);
+            
+            var offerDtos = JsonSerializer.Deserialize<List<OfferDto>>(offersJson);
+            var offers = offerDtos?.Select(dto => dto.ToOffer()).ToList();
 
             if (offers != null && offers.Count > 0)
             {
@@ -128,7 +130,8 @@ namespace VodafoneLogin.Services
         {
             progressReporter?.ReportOffersFound(1);
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            string line = $"[{timestamp}] Номер: {phoneNumber}, Скидка: {offer.discount}%, Мин. пополнение: {offer.topUp} грн, Действует до: {offer.validUntil}{Environment.NewLine}";
+            string validUntilStr = offer.ValidUntil?.ToString("yyyy-MM-dd") ?? "N/A";
+            string line = $"[{timestamp}] Номер: {phoneNumber}, Скидка: {offer.Discount}%, Мин. пополнение: {offer.MinTopUp} грн, Подарок: {offer.Gift} грн, Дней действия: {offer.ActiveDays}, Действует до: {validUntilStr}{Environment.NewLine}";
             _fileService.AppendResult(line, _resultFile);
             await Task.CompletedTask;
         }

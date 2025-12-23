@@ -121,30 +121,38 @@ namespace VodafoneLogin.Services
                 throw new InvalidOperationException("WebView is not initialized");
 
             return await WebView.CoreWebView2.ExecuteScriptAsync(@"
-                (function () {
-                    const panels = [...document.querySelectorAll('mat-expansion-panel')];
-                    const offers = [];
+            (function () {
+                const panels = [...document.querySelectorAll('mat-expansion-panel')];
+                const offers = [];
 
-                    for (const panel of panels) {
-                        const text = panel.innerText.replace(/\s+/g, ' ').trim();
+                for (const panel of panels) {
+                    const text = panel.innerText.replace(/\s+/g, ' ').trim();
 
-                        const discount = text.match(/знижку\s+(\d+)%/i)?.[1] ?? null;
-                        const topUp = text.match(/від\s+(\d+)\s*грн/i)?.[1] ?? null;
-                        const validUntil = text.match(/до\s+(\d{4}-\d{2}-\d{2})/i)?.[1] ?? null;
+                    // Старый вариант
+                    const discount = parseInt(text.match(/знижку\s+(\d+)%/i)?.[1] ?? '0');
+                    const minTopUp = parseFloat(text.match(/від\s+(\d+)\s*грн/i)?.[1] ?? '0');
 
-                        if (discount || topUp || validUntil) {
-                            offers.push({
-                                discount,
-                                topUp,
-                                validUntil,
-                                fullText: text
-                            });
-                        }
-                    }
+                    // Новый вариант
+                    const gift = parseFloat(text.match(/(\d+)\s*грн на рахунок/i)?.[1] ?? '0');
+                    const activeDays = parseInt(text.match(/термін їх дії\s*–\s*(\d+)/i)?.[1] ?? '0');
 
-                    return JSON.stringify(offers);
-                })();
-            ");
+                    // Дата действия
+                    const validUntilMatch = text.match(/до\s+(\d{4}-\d{2}-\d{2})/i);
+                    const validUntil = validUntilMatch ? validUntilMatch[1] : null;
+
+                    offers.push({
+                        Discount: discount,
+                        MinTopUp: minTopUp,
+                        Gift: gift,
+                        ActiveDays: activeDays,
+                        ValidUntil: validUntil,
+                        FullText: text
+                    });
+                }
+
+                return JSON.stringify(offers);
+            })();
+        ");
         }
 
         public async Task ExecuteScriptAsync(string script)

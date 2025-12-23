@@ -2,10 +2,12 @@ namespace VodafoneLogin.Models
 {
     public class Offer
     {
-        public string? discount { get; set; }
-        public string? topUp { get; set; }
-        public string? validUntil { get; set; }
-        public string? fullText { get; set; }
+        public int Discount { get; set; }        // скидка %, 0 если нет
+        public decimal MinTopUp { get; set; }    // минимальное пополнение, 0 если нет
+        public decimal Gift { get; set; }        // сумма подарка, 0 если нет
+        public int ActiveDays { get; set; }      // срок действия подарка, 0 если нет
+        public DateTime? ValidUntil { get; set; } // дата окончания
+        public string? FullText { get; set; }     // оригинальный текст
     }
 }
 
