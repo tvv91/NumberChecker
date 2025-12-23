@@ -121,38 +121,44 @@ namespace VodafoneLogin.Services
                 throw new InvalidOperationException("WebView is not initialized");
 
             return await WebView.CoreWebView2.ExecuteScriptAsync(@"
-            (function () {
-                const panels = [...document.querySelectorAll('mat-expansion-panel')];
-                const offers = [];
+        (function () {
+            const panels = [...document.querySelectorAll('mat-expansion-panel')];
+            const offers = [];
 
-                for (const panel of panels) {
-                    const text = panel.innerText.replace(/\s+/g, ' ').trim();
+            for (const panel of panels) {
+                const text = panel.innerText.replace(/\s+/g, ' ').trim();
 
-                    // Старый вариант
-                    const discount = parseInt(text.match(/знижку\s+(\d+)%/i)?.[1] ?? '0');
-                    const minTopUp = parseFloat(text.match(/від\s+(\d+)\s*грн/i)?.[1] ?? '0');
+                const discount = parseInt(text.match(/знижку\s+(\d+)%/i)?.[1] ?? '0');
+                const minTopUp = parseFloat(text.match(/від\s+(\d+)\s*грн/i)?.[1] ?? '0');
+                const gift = parseFloat(text.match(/(\d+)\s*грн на рахунок/i)?.[1] ?? '0');
 
-                    // Новый вариант
-                    const gift = parseFloat(text.match(/(\d+)\s*грн на рахунок/i)?.[1] ?? '0');
-                    const activeDays = parseInt(text.match(/термін їх дії\s*–\s*(\d+)/i)?.[1] ?? '0');
-
-                    // Дата действия
-                    const validUntilMatch = text.match(/до\s+(\d{4}-\d{2}-\d{2})/i);
-                    const validUntil = validUntilMatch ? validUntilMatch[1] : null;
-
-                    offers.push({
-                        Discount: discount,
-                        MinTopUp: minTopUp,
-                        Gift: gift,
-                        ActiveDays: activeDays,
-                        ValidUntil: validUntil,
-                        FullText: text
-                    });
+                let activeDays = 0;
+                const percentDaysMatch = text.match(/треба\s+протягом\s*(\d+)\s*дн/i);
+                if (percentDaysMatch) {
+                    activeDays = parseInt(percentDaysMatch[1]);
+                } else {
+                    const giftDaysMatch = text.match(/термін їх дії\s*–\s*(\d+)/i);
+                    if (giftDaysMatch) {
+                        activeDays = parseInt(giftDaysMatch[1]);
+                    }
                 }
 
-                return JSON.stringify(offers);
-            })();
-        ");
+                const validUntilMatch = text.match(/до\s+(\d{4}-\d{2}-\d{2})/i);
+                const validUntil = validUntilMatch ? validUntilMatch[1] : null;
+
+                offers.push({
+                    Discount: discount,
+                    MinTopUp: minTopUp,
+                    Gift: gift,
+                    ActiveDays: activeDays,
+                    ValidUntil: validUntil,
+                    FullText: text
+                });
+            }
+
+            return JSON.stringify(offers);
+        })();
+    ");
         }
 
         public async Task ExecuteScriptAsync(string script)
