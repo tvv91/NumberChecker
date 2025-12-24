@@ -7,7 +7,6 @@ namespace VodafoneLogin.Models
         public decimal Gift { get; set; }        // сумма подарка, 0 если нет
         public int ActiveDays { get; set; }      // срок действия подарка, 0 если нет
         public DateTime? ValidUntil { get; set; } // дата окончания
-        public string? FullText { get; set; }     // оригинальный текст
     }
 }
 

@@ -37,7 +37,7 @@ namespace VodafoneLogin
 
         private async void webView_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
         {
-            await _viewModel.StartPhoneSearchAsync();
+            // Navigation completed - no auto-start scan
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)

@@ -146,14 +146,13 @@ namespace VodafoneLogin.Services
                 const validUntilMatch = text.match(/до\s+(\d{4}-\d{2}-\d{2})/i);
                 const validUntil = validUntilMatch ? validUntilMatch[1] : null;
 
-                offers.push({
-                    Discount: discount,
-                    MinTopUp: minTopUp,
-                    Gift: gift,
-                    ActiveDays: activeDays,
-                    ValidUntil: validUntil,
-                    FullText: text
-                });
+                    offers.push({
+                        Discount: discount,
+                        MinTopUp: minTopUp,
+                        Gift: gift,
+                        ActiveDays: activeDays,
+                        ValidUntil: validUntil
+                    });
             }
 
             return JSON.stringify(offers);

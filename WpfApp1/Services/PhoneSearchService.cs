@@ -173,6 +173,12 @@ namespace VodafoneLogin.Services
                     progressReporter?.ReportOffersFound(1);
                 }
 
+                // Clear error if it was set previously (successful processing)
+                if (phoneOffer.IsError)
+                {
+                    await _dataService.ClearPhoneOfferErrorAsync(phoneOffer.Id);
+                }
+
                 // Mark as processed on success
                 await _dataService.MarkPhoneOfferAsProcessedAsync(phoneOffer.Id);
                 await _dataService.SetLastProcessedPhoneIdAsync(phoneOffer.Id);

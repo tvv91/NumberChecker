@@ -19,9 +19,6 @@ namespace VodafoneLogin.Models
         [JsonPropertyName("ValidUntil")]
         public string? ValidUntil { get; set; }
 
-        [JsonPropertyName("FullText")]
-        public string? FullText { get; set; }
-
         public Offer ToOffer()
         {
             DateTime? validUntil = null;
@@ -36,8 +33,7 @@ namespace VodafoneLogin.Models
                 MinTopUp = MinTopUp,
                 Gift = Gift,
                 ActiveDays = ActiveDays,
-                ValidUntil = validUntil,
-                FullText = FullText
+                ValidUntil = validUntil
             };
         }
     }

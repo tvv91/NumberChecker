@@ -18,6 +18,50 @@ namespace VodafoneLogin.Services
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             await context.Database.EnsureCreatedAsync();
+            
+            // Check and add missing columns if needed (for schema updates)
+            await EnsureSchemaUpToDateAsync(context);
+        }
+
+        private async Task EnsureSchemaUpToDateAsync(AppDbContext context)
+        {
+            try
+            {
+                // Check if IsError column exists by querying pragma_table_info
+                var connection = context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                
+                using var command = connection.CreateCommand();
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('PhoneOffers') WHERE name='IsError';";
+                var result = await command.ExecuteScalarAsync();
+                var count = Convert.ToInt32(result);
+                
+                if (count == 0)
+                {
+                    // IsError column doesn't exist, add it
+                    command.CommandText = "ALTER TABLE PhoneOffers ADD COLUMN IsError INTEGER NOT NULL DEFAULT 0;";
+                    await command.ExecuteNonQueryAsync();
+                }
+                
+                // Check if ErrorDescription column exists
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('PhoneOffers') WHERE name='ErrorDescription';";
+                result = await command.ExecuteScalarAsync();
+                count = Convert.ToInt32(result);
+                
+                if (count == 0)
+                {
+                    // ErrorDescription column doesn't exist, add it
+                    command.CommandText = "ALTER TABLE PhoneOffers ADD COLUMN ErrorDescription TEXT;";
+                    await command.ExecuteNonQueryAsync();
+                }
+                
+                await connection.CloseAsync();
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail - might be first run or other issue
+                System.Diagnostics.Debug.WriteLine($"Schema update error: {ex.Message}");
+            }
         }
 
         private string NormalizePhoneNumber(string phoneNumber)
@@ -43,7 +87,6 @@ namespace VodafoneLogin.Services
                 existingOffer.GiftAmount = offer.Gift;
                 existingOffer.ActiveDays = offer.ActiveDays;
                 existingOffer.ValidUntil = offer.ValidUntil;
-                existingOffer.FullText = offer.FullText;
                 existingOffer.UpdatedAt = DateTime.UtcNow;
                 await context.SaveChangesAsync();
                 return existingOffer.Id;
@@ -60,7 +103,6 @@ namespace VodafoneLogin.Services
                     GiftAmount = offer.Gift,
                     ActiveDays = offer.ActiveDays,
                     ValidUntil = offer.ValidUntil,
-                    FullText = offer.FullText,
                     CreatedAt = DateTime.UtcNow
                 };
                 
@@ -96,7 +138,6 @@ namespace VodafoneLogin.Services
                 GiftAmount = 0,
                 ActiveDays = 0,
                 ValidUntil = null,
-                FullText = null,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = null,
                 IsSynchronized = false,
@@ -150,8 +191,9 @@ namespace VodafoneLogin.Services
             
             var lastProcessedId = await GetLastProcessedPhoneIdAsync();
             
+            // Get unprocessed offers (including those with errors for retry)
             var query = context.PhoneOffers
-                .Where(p => !p.IsProcessed);
+                .Where(p => !p.IsProcessed || p.IsError);
             
             if (lastProcessedId.HasValue)
             {
@@ -182,9 +224,23 @@ namespace VodafoneLogin.Services
             var offer = await context.PhoneOffers.FindAsync(phoneOfferId);
             if (offer != null)
             {
+                offer.IsError = true;
+                offer.ErrorDescription = error;
                 offer.SyncError = error;
                 offer.LastSyncAttempt = DateTime.UtcNow;
                 offer.SyncAttempts++;
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async Task ClearPhoneOfferErrorAsync(int phoneOfferId)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var offer = await context.PhoneOffers.FindAsync(phoneOfferId);
+            if (offer != null)
+            {
+                offer.IsError = false;
+                offer.ErrorDescription = null;
                 await context.SaveChangesAsync();
             }
         }
@@ -211,8 +267,9 @@ namespace VodafoneLogin.Services
                 offer.GiftAmount = 0;
                 offer.ActiveDays = 0;
                 offer.ValidUntil = null;
-                offer.FullText = null;
                 offer.UpdatedAt = null;
+                offer.IsError = false;
+                offer.ErrorDescription = null;
                 offer.IsSynchronized = false;
                 offer.SyncedAt = null;
                 offer.LastSyncAttempt = null;

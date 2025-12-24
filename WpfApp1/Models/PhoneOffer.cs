@@ -21,7 +21,6 @@ namespace VodafoneLogin.Models
 
         public int ActiveDays { get; set; } = 0;             // срок действия оффера в днях
         public DateTime? ValidUntil { get; set; }            // действует до
-        public string? FullText { get; set; }                // полный текст оффера
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;  // дата добавления
         public DateTime? UpdatedAt { get; set; }                    // дата последнего обновления
@@ -33,6 +32,8 @@ namespace VodafoneLogin.Models
         public string? SyncError { get; set; }                     // текст ошибки последней синхронизации
 
         public bool IsProcessed { get; set; } = false;             // обработан ли локально
+        public bool IsError { get; set; } = false;                 // есть ли ошибка при обработке
+        public string? ErrorDescription { get; set; }              // описание ошибки
     }
 }
 
