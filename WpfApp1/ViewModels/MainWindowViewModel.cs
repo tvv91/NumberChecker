@@ -15,6 +15,7 @@ namespace VodafoneLogin.ViewModels
         private readonly IDataService _dataService;
         private readonly PhoneOffersViewModel? _phoneOffersViewModel;
         private readonly ConfigViewModel _configViewModel;
+        private readonly ILoggerService _logger;
 
         private List<string> _phoneNumbers = new();
         private int _totalNumbers;
@@ -29,7 +30,7 @@ namespace VodafoneLogin.ViewModels
         private double _progressNext;
         private bool _isAuthenticated;
 
-        public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null)
+        public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null, ILoggerService? logger = null)
         {
             _fileService = fileService;
             _webViewService = webViewService;
@@ -37,6 +38,7 @@ namespace VodafoneLogin.ViewModels
             _dataService = dataService;
             _phoneOffersViewModel = phoneOffersViewModel;
             _configViewModel = configViewModel ?? new ConfigViewModel();
+            _logger = logger ?? new FileLoggerService();
 
             // Subscribe to navigation events to check authentication
             _webViewService.NavigationCompleted += async (s, url) =>
@@ -173,57 +175,92 @@ namespace VodafoneLogin.ViewModels
 
         private async void ImportPhoneNumbers()
         {
-            var dialog = new Microsoft.Win32.OpenFileDialog
+            try
             {
-                Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
-                Title = "Выберите файл с номерами телефонов"
-            };
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                    Title = "Выберите файл с номерами телефонов"
+                };
 
-            if (dialog.ShowDialog() == true)
-            {
-                try
+                if (dialog.ShowDialog() == true)
                 {
-                    _phoneNumbers = _fileService.ReadPhoneNumbers(dialog.FileName);
-                    
-                    // Import phone numbers to database with default states
-                    int importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers);
-                    TotalNumbers = _phoneNumbers.Count;
-                    
-                    // Refresh PhoneOffersViewModel to show newly imported numbers
-                    if (_phoneOffersViewModel != null)
+                    try
                     {
-                        await _phoneOffersViewModel.LoadDataAsync();
+                        _logger.LogInfo($"Starting import from file: {dialog.FileName}");
+                        _phoneNumbers = _fileService.ReadPhoneNumbers(dialog.FileName);
+                        
+                        // Import phone numbers to database with default states
+                        int importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers);
+                        TotalNumbers = _phoneNumbers.Count;
+                        
+                        // Refresh PhoneOffersViewModel to show newly imported numbers
+                        if (_phoneOffersViewModel != null)
+                        {
+                            await _phoneOffersViewModel.LoadDataAsync();
+                        }
+                        
+                        _logger.LogInfo($"Successfully imported {importedCount} out of {_phoneNumbers.Count} phone numbers");
+                        
+                        System.Windows.MessageBox.Show(
+                            $"Импортировано {importedCount} из {_phoneNumbers.Count} номеров телефонов в базу данных",
+                            "Импорт завершен",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Information);
                     }
-                    
-                    System.Windows.MessageBox.Show(
-                        $"Импортировано {importedCount} из {_phoneNumbers.Count} номеров телефонов в базу данных",
-                        "Импорт завершен",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Information);
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Error during phone numbers import", ex);
+                        System.Windows.MessageBox.Show(
+                            $"Ошибка при импорте файла: {ex.Message}",
+                            "Ошибка",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Error);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show(
-                        $"Ошибка при импорте файла: {ex.Message}",
-                        "Ошибка",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Error);
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error opening file dialog for import", ex);
+                System.Windows.MessageBox.Show(
+                    $"Ошибка при открытии диалога выбора файла: {ex.Message}",
+                    "Ошибка",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
             }
         }
 
         public async Task InitializeWebViewAsync()
         {
-            await _webViewService.InitializeAsync();
-            await _webViewService.NavigateAsync("https://partner.vodafone.ua/dashboard/personal-offers-main/personal-offers");
-            // Check authentication after navigation
-            await CheckAuthenticationStatusAsync();
+            try
+            {
+                _logger.LogInfo("Initializing WebView...");
+                await _webViewService.InitializeAsync();
+                await _webViewService.NavigateAsync("https://partner.vodafone.ua/dashboard/personal-offers-main/personal-offers");
+                // Check authentication after navigation
+                await CheckAuthenticationStatusAsync();
+                _logger.LogInfo("WebView initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error initializing WebView", ex);
+                throw;
+            }
         }
 
         public async Task CheckAuthenticationStatusAsync()
         {
-            bool authenticated = await _webViewService.CheckAuthenticationAsync();
-            IsAuthenticated = authenticated;
+            try
+            {
+                bool authenticated = await _webViewService.CheckAuthenticationAsync();
+                IsAuthenticated = authenticated;
+                _logger.LogInfo($"Authentication status checked: {(authenticated ? "Authenticated" : "Not authenticated")}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error checking authentication status", ex);
+                IsAuthenticated = false;
+            }
         }
 
         public async Task StartPhoneSearchAsync()
@@ -245,153 +282,231 @@ namespace VodafoneLogin.ViewModels
 
         private async Task StartContinueScanAsync()
         {
-
-            var unprocessedOffers = await _dataService.GetUnprocessedPhoneOffersAsync();
-            
-            if (unprocessedOffers.Count == 0)
-            {
-                System.Windows.MessageBox.Show(
-                    "Нет необработанных номеров для сканирования",
-                    "Нет данных",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
-                return;
-            }
-
-            // Create cancellation token source
-            _cancellationTokenSource = new CancellationTokenSource();
-            IsScanning = true;
-
-            TotalNumbers = unprocessedOffers.Count;
-            ProcessedCount = 0;
-            OffersFoundCount = 0;
-            ServerErrors = 0;
-
-            var configuration = _configViewModel.GetConfiguration();
-
             try
             {
-                foreach (var phoneOffer in unprocessedOffers)
-                {
-                    // Check for cancellation
-                    _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-
-                    // Get current configuration (in case user changed it in config window)
-                    configuration = _configViewModel.GetConfiguration();
-
-                    await _phoneSearchService.ProcessPhoneOfferAsync(phoneOffer, configuration, this, _cancellationTokenSource.Token);
-                }
-
-                // Refresh PhoneOffersViewModel
-                if (_phoneOffersViewModel != null)
-                {
-                    await _phoneOffersViewModel.LoadDataAsync();
-                }
-
-                System.Windows.MessageBox.Show("Обработка завершена", "^_^", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-            }
-            catch (OperationCanceledException)
-            {
-                // Reset progress bars
-                ProgressInput = 0;
-                ProgressSearch = 0;
-                ProgressNext = 0;
-
-                // Refresh PhoneOffersViewModel
-                if (_phoneOffersViewModel != null)
-                {
-                    await _phoneOffersViewModel.LoadDataAsync();
-                }
-
-                System.Windows.MessageBox.Show(
-                    "Сканирование остановлено пользователем",
-                    "Остановлено",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
-            }
-            finally
-            {
-                // Ensure progress bars are reset
-                ProgressInput = 0;
-                ProgressSearch = 0;
-                ProgressNext = 0;
+                _logger.LogInfo("Starting phone scan...");
+                var unprocessedOffers = await _dataService.GetUnprocessedPhoneOffersAsync();
                 
+                if (unprocessedOffers.Count == 0)
+                {
+                    _logger.LogInfo("No unprocessed phone offers found");
+                    System.Windows.MessageBox.Show(
+                        "Нет необработанных номеров для сканирования",
+                        "Нет данных",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                    return;
+                }
+
+                // Create cancellation token source
+                _cancellationTokenSource = new CancellationTokenSource();
+                IsScanning = true;
+
+                TotalNumbers = unprocessedOffers.Count;
+                ProcessedCount = 0;
+                OffersFoundCount = 0;
+                ServerErrors = 0;
+
+                var configuration = _configViewModel.GetConfiguration();
+
+                try
+                {
+                    foreach (var phoneOffer in unprocessedOffers)
+                    {
+                        // Check for cancellation
+                        _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+
+                        // Get current configuration (in case user changed it in config window)
+                        configuration = _configViewModel.GetConfiguration();
+
+                        await _phoneSearchService.ProcessPhoneOfferAsync(phoneOffer, configuration, this, _cancellationTokenSource.Token);
+                    }
+
+                    // Refresh PhoneOffersViewModel
+                    if (_phoneOffersViewModel != null)
+                    {
+                        await _phoneOffersViewModel.LoadDataAsync();
+                    }
+
+                    _logger.LogInfo("Phone scan completed successfully");
+                    System.Windows.MessageBox.Show("Обработка завершена", "^_^", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInfo("Phone scan cancelled by user");
+                    // Reset progress bars
+                    ProgressInput = 0;
+                    ProgressSearch = 0;
+                    ProgressNext = 0;
+
+                    // Refresh PhoneOffersViewModel
+                    if (_phoneOffersViewModel != null)
+                    {
+                        await _phoneOffersViewModel.LoadDataAsync();
+                    }
+
+                    System.Windows.MessageBox.Show(
+                        "Сканирование остановлено пользователем",
+                        "Остановлено",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Error during phone scan", ex);
+                    System.Windows.MessageBox.Show(
+                        $"Ошибка во время сканирования: {ex.Message}",
+                        "Ошибка",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Error);
+                }
+                finally
+                {
+                    // Ensure progress bars are reset
+                    ProgressInput = 0;
+                    ProgressSearch = 0;
+                    ProgressNext = 0;
+                    
+                    IsScanning = false;
+                    _cancellationTokenSource?.Dispose();
+                    _cancellationTokenSource = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error starting phone scan", ex);
                 IsScanning = false;
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = null;
+                System.Windows.MessageBox.Show(
+                    $"Ошибка при запуске сканирования: {ex.Message}",
+                    "Ошибка",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
             }
         }
 
         private async Task StopScanAsync()
         {
-            if (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
+            try
             {
-                _cancellationTokenSource.Cancel();
-                
-                // Reset progress bars
-                ProgressInput = 0;
-                ProgressSearch = 0;
-                ProgressNext = 0;
+                _logger.LogInfo("Stopping phone scan...");
+                if (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    _cancellationTokenSource.Cancel();
+                    
+                    // Reset progress bars
+                    ProgressInput = 0;
+                    ProgressSearch = 0;
+                    ProgressNext = 0;
+                }
+                await Task.CompletedTask;
             }
-            await Task.CompletedTask;
+            catch (Exception ex)
+            {
+                _logger.LogError("Error stopping phone scan", ex);
+            }
         }
 
         private void OpenConfig()
         {
-            var configWindow = new ConfigWindow(_configViewModel);
-            configWindow.Owner = System.Windows.Application.Current.MainWindow;
-            configWindow.ShowDialog();
+            try
+            {
+                var configWindow = new ConfigWindow(_configViewModel);
+                configWindow.Owner = System.Windows.Application.Current.MainWindow;
+                configWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error opening config window", ex);
+                System.Windows.MessageBox.Show(
+                    $"Ошибка при открытии окна настроек: {ex.Message}",
+                    "Ошибка",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
         }
 
         public async Task ResetScannedAsync()
         {
-            var result = System.Windows.MessageBox.Show(
-                "Сбросить статус обработки для всех записей?",
-                "Подтверждение",
-                System.Windows.MessageBoxButton.YesNo,
-                System.Windows.MessageBoxImage.Question);
-
-            if (result == System.Windows.MessageBoxResult.Yes)
+            try
             {
-                await _dataService.ResetScannedAsync();
-                
-                // Refresh PhoneOffersViewModel
-                if (_phoneOffersViewModel != null)
-                {
-                    await _phoneOffersViewModel.LoadDataAsync();
-                }
+                var result = System.Windows.MessageBox.Show(
+                    "Сбросить статус обработки для всех записей?",
+                    "Подтверждение",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
 
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    _logger.LogInfo("Resetting scanned status...");
+                    await _dataService.ResetScannedAsync();
+                    
+                    // Refresh PhoneOffersViewModel
+                    if (_phoneOffersViewModel != null)
+                    {
+                        await _phoneOffersViewModel.LoadDataAsync();
+                    }
+
+                    _logger.LogInfo("Scanned status reset successfully");
+                    System.Windows.MessageBox.Show(
+                        "Статус обработки сброшен для всех записей",
+                        "Готово",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error resetting scanned status", ex);
                 System.Windows.MessageBox.Show(
-                    "Статус обработки сброшен для всех записей",
-                    "Готово",
+                    $"Ошибка при сбросе статуса обработки: {ex.Message}",
+                    "Ошибка",
                     System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
+                    System.Windows.MessageBoxImage.Error);
             }
         }
 
         public async Task ResetAllAsync()
         {
-            var result = System.Windows.MessageBox.Show(
-                "Сбросить все записи к состоянию по умолчанию? Это действие нельзя отменить.",
-                "Подтверждение",
-                System.Windows.MessageBoxButton.YesNo,
-                System.Windows.MessageBoxImage.Warning);
-
-            if (result == System.Windows.MessageBoxResult.Yes)
+            try
             {
-                await _dataService.ResetAllAsync();
-                
-                // Refresh PhoneOffersViewModel
-                if (_phoneOffersViewModel != null)
-                {
-                    await _phoneOffersViewModel.LoadDataAsync();
-                }
+                var result = System.Windows.MessageBox.Show(
+                    "Сбросить все записи к состоянию по умолчанию? Это действие нельзя отменить.",
+                    "Подтверждение",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Warning);
 
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    _logger.LogInfo("Resetting all data...");
+                    await _dataService.ResetAllAsync();
+                    
+                    // Refresh PhoneOffersViewModel
+                    if (_phoneOffersViewModel != null)
+                    {
+                        await _phoneOffersViewModel.LoadDataAsync();
+                    }
+
+                    TotalNumbers = 0;
+                    ProcessedCount = 0;
+                    OffersFoundCount = 0;
+                    ServerErrors = 0;
+
+                    _logger.LogInfo("All data reset successfully");
+                    System.Windows.MessageBox.Show(
+                        "Все записи сброшены к состоянию по умолчанию",
+                        "Готово",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error resetting all data", ex);
                 System.Windows.MessageBox.Show(
-                    "Все записи сброшены к состоянию по умолчанию",
-                    "Готово",
+                    $"Ошибка при сбросе всех данных: {ex.Message}",
+                    "Ошибка",
                     System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Information);
+                    System.Windows.MessageBoxImage.Error);
             }
         }
 

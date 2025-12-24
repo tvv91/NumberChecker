@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading.Tasks;
 using System.Windows;
 using VodafoneLogin.Data;
 using VodafoneLogin.Services;
@@ -18,21 +20,86 @@ namespace VodafoneLogin
         {
             base.OnStartup(e);
 
+            // Setup global exception handlers
+            SetupExceptionHandling();
+
             var serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
 
             _serviceProvider = serviceCollection.BuildServiceProvider();
 
-            // Ensure database is created
-            var dataService = _serviceProvider.GetRequiredService<IDataService>();
-            await dataService.EnsureDatabaseCreatedAsync();
+            try
+            {
+                // Get logger first
+                var logger = _serviceProvider.GetRequiredService<ILoggerService>();
+                logger.LogInfo("Application starting...");
 
-            // Load initial data for PhoneOffersViewModel
-            var phoneOffersViewModel = _serviceProvider.GetRequiredService<PhoneOffersViewModel>();
-            await phoneOffersViewModel.LoadDataAsync();
+                // Ensure database is created
+                var dataService = _serviceProvider.GetRequiredService<IDataService>();
+                await dataService.EnsureDatabaseCreatedAsync();
 
-            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-            mainWindow.Show();
+                // Load initial data for PhoneOffersViewModel
+                var phoneOffersViewModel = _serviceProvider.GetRequiredService<PhoneOffersViewModel>();
+                await phoneOffersViewModel.LoadDataAsync();
+
+                var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+                mainWindow.Show();
+
+                logger.LogInfo("Application started successfully");
+            }
+            catch (Exception ex)
+            {
+                var logger = _serviceProvider?.GetService<ILoggerService>();
+                logger?.LogError("Fatal error during application startup", ex);
+                
+                MessageBox.Show(
+                    $"Fatal error during application startup:\n{ex.Message}\n\nCheck the log file for details.",
+                    "Fatal Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                
+                Shutdown(1);
+            }
+        }
+
+        private void SetupExceptionHandling()
+        {
+            // Handle UI thread exceptions
+            DispatcherUnhandledException += (sender, e) =>
+            {
+                var logger = _serviceProvider?.GetService<ILoggerService>();
+                logger?.LogError("Unhandled exception on UI thread", e.Exception);
+                
+                e.Handled = true;
+                
+                MessageBox.Show(
+                    $"An unhandled exception occurred:\n{e.Exception.Message}\n\nCheck the log file for details.",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            };
+
+            // Handle non-UI thread exceptions
+            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            {
+                var logger = _serviceProvider?.GetService<ILoggerService>();
+                if (e.ExceptionObject is Exception ex)
+                {
+                    logger?.LogError("Unhandled exception on non-UI thread", ex);
+                }
+                else
+                {
+                    logger?.LogError($"Unhandled exception: {e.ExceptionObject}");
+                }
+            };
+
+            // Handle Task exceptions
+            TaskScheduler.UnobservedTaskException += (sender, e) =>
+            {
+                var logger = _serviceProvider?.GetService<ILoggerService>();
+                logger?.LogError("Unobserved task exception", e.Exception);
+                e.SetObserved();
+            };
         }
 
         private void ConfigureServices(IServiceCollection services)
@@ -40,6 +107,9 @@ namespace VodafoneLogin
             // Register DbContext
             services.AddDbContextFactory<AppDbContext>(options =>
                 options.UseSqlite("Data Source=vodafone.db"));
+
+            // Register logger first (singleton)
+            services.AddSingleton<ILoggerService, FileLoggerService>();
 
             // Register services
             services.AddSingleton<IFileService, FileService>();
@@ -60,7 +130,8 @@ namespace VodafoneLogin
                     sp.GetRequiredService<IPhoneSearchService>(),
                     sp.GetRequiredService<IDataService>(),
                     phoneOffersViewModel,
-                    configViewModel);
+                    configViewModel,
+                    sp.GetRequiredService<ILoggerService>());
             });
 
             // Register Views
