@@ -130,7 +130,7 @@
             </TabItem>
         </TabControl>
 
-        <!-- Settings -->
+        <!-- Progress Bars -->
         <Grid Grid.Row="1" Background="#EEE">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -140,48 +140,69 @@
 
             <!-- Ввод номера -->
             <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="10,0">
-                <TextBlock Text="Ввод номера (сек)" HorizontalAlignment="Center"/>
-                <TextBlock Text="Мин" HorizontalAlignment="Center"/>
-                <Slider Minimum="0" Maximum="60" Value="{Binding DelayInputMin, Mode=TwoWay}"/>
-                <TextBlock Text="{Binding DelayInputMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
-                <TextBlock Text="Макс" HorizontalAlignment="Center"/>
-                <Slider Minimum="0" Maximum="60" Value="{Binding DelayInputMax, Mode=TwoWay}"/>
-                <TextBlock Text="{Binding DelayInputMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
-
-                <!-- Прогресс бар -->
-                <ProgressBar Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0" Value="{Binding ProgressInput}"/>
+                <TextBlock Text="Ввод номера" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="20" Margin="0,5,0,0" Value="{Binding ProgressInput}"/>
             </StackPanel>
 
             <!-- Нажатие на поиск -->
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
-                <TextBlock Text="Нажатие на поиск (сек)" HorizontalAlignment="Center"/>
-                <TextBlock Text="Мин" HorizontalAlignment="Center"/>
-                <Slider Minimum="0" Maximum="60" Value="{Binding DelaySearchMin, Mode=TwoWay}"/>
-                <TextBlock Text="{Binding DelaySearchMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
-                <TextBlock Text="Макс" HorizontalAlignment="Center"/>
-                <Slider Minimum="0" Maximum="60" Value="{Binding DelaySearchMax, Mode=TwoWay}"/>
-                <TextBlock Text="{Binding DelaySearchMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
-
-                <!-- Прогресс бар -->
-                <ProgressBar Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0" Value="{Binding ProgressSearch}"/>
+                <TextBlock Text="Нажатие на поиск" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="20" Margin="0,5,0,0" Value="{Binding ProgressSearch}"/>
             </StackPanel>
 
             <!-- Следующий номер -->
             <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="10,0">
-                <TextBlock Text="Следующий номер (сек)" HorizontalAlignment="Center"/>
-                <TextBlock Text="Мин" HorizontalAlignment="Center"/>
-                <Slider Minimum="0" Maximum="60" Value="{Binding DelayNextMin, Mode=TwoWay}"/>
-                <TextBlock Text="{Binding DelayNextMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
-                <TextBlock Text="Макс" HorizontalAlignment="Center"/>
-                <Slider Minimum="0" Maximum="60" Value="{Binding DelayNextMax, Mode=TwoWay}"/>
-                <TextBlock Text="{Binding DelayNextMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center"/>
-
-                <!-- Прогресс бар -->
-                <ProgressBar Minimum="0" Maximum="100" Height="15" Margin="0,5,0,0" Value="{Binding ProgressNext}"/>
+                <TextBlock Text="Следующий номер" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="20" Margin="0,5,0,0" Value="{Binding ProgressNext}"/>
             </StackPanel>
         </Grid>
         <!-- Status -->
         <StatusBar Grid.Row="2" VerticalAlignment="Bottom" FontSize="16">
+            <StatusBarItem>
+                <Button Content="Импорт номеров" 
+                        Command="{Binding ImportPhoneNumbersCommand}"
+                        Padding="10,5"
+                        Margin="5,0"/>
+            </StatusBarItem>
+
+            <Separator Width="10"/>
+
+            <StatusBarItem>
+                <Button Content="{Binding ScanButtonText}" 
+                        Command="{Binding StartStopScanCommand}"
+                        Padding="10,5"
+                        Margin="5,0"/>
+            </StatusBarItem>
+
+            <Separator Width="10"/>
+
+            <StatusBarItem>
+                <Button Content="Config" 
+                        Command="{Binding OpenConfigCommand}"
+                        Padding="10,5"
+                        Margin="5,0"/>
+            </StatusBarItem>
+
+            <Separator Width="10"/>
+
+            <StatusBarItem>
+                <Button Content="Сбросить обработанные" 
+                        Command="{Binding ResetScannedCommand}"
+                        Padding="10,5"
+                        Margin="5,0"/>
+            </StatusBarItem>
+
+            <Separator Width="10"/>
+
+            <StatusBarItem>
+                <Button Content="Сбросить все" 
+                        Command="{Binding ResetAllCommand}"
+                        Padding="10,5"
+                        Margin="5,0"/>
+            </StatusBarItem>
+
+            <Separator Width="10"/>
+
             <StatusBarItem>
                 <TextBlock Text="{Binding TotalNumbers, StringFormat='Всего номеров: {0}'}" />
             </StatusBarItem>

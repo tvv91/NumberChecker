@@ -70,6 +70,159 @@ namespace VodafoneLogin.Services
             }
         }
 
+        public async Task<int> ImportPhoneNumberAsync(string phoneNumber)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            
+            string normalized = NormalizePhoneNumber(phoneNumber);
+            
+            // Check if phone number already exists
+            var existingOffer = await context.PhoneOffers
+                .FirstOrDefaultAsync(p => p.PhoneNormalized == normalized);
+
+            if (existingOffer != null)
+            {
+                // Already exists, return existing ID
+                return existingOffer.Id;
+            }
+
+            // Create new PhoneOffer with default values
+            var phoneOffer = new PhoneOffer
+            {
+                PhoneNumber = phoneNumber,
+                PhoneNormalized = normalized,
+                DiscountPercent = 0,
+                MinTopupAmount = 0,
+                GiftAmount = 0,
+                ActiveDays = 0,
+                ValidUntil = null,
+                FullText = null,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = null,
+                IsSynchronized = false,
+                SyncedAt = null,
+                LastSyncAttempt = null,
+                SyncAttempts = 0,
+                SyncError = null,
+                IsProcessed = false
+            };
+            
+            context.PhoneOffers.Add(phoneOffer);
+            await context.SaveChangesAsync();
+            return phoneOffer.Id;
+        }
+
+        public async Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers)
+        {
+            // Clear all existing phone offers first
+            await ClearAllPhoneOffersAsync();
+            
+            int importedCount = 0;
+            
+            foreach (var phoneNumber in phoneNumbers)
+            {
+                try
+                {
+                    await ImportPhoneNumberAsync(phoneNumber);
+                    importedCount++;
+                }
+                catch
+                {
+                    // Skip duplicates or errors, continue with next number
+                    continue;
+                }
+            }
+            
+            return importedCount;
+        }
+
+        public async Task ClearAllPhoneOffersAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var allOffers = await context.PhoneOffers.ToListAsync();
+            context.PhoneOffers.RemoveRange(allOffers);
+            await context.SaveChangesAsync();
+        }
+
+        public async Task<List<PhoneOffer>> GetUnprocessedPhoneOffersAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            
+            var lastProcessedId = await GetLastProcessedPhoneIdAsync();
+            
+            var query = context.PhoneOffers
+                .Where(p => !p.IsProcessed);
+            
+            if (lastProcessedId.HasValue)
+            {
+                // Start from the next record after last processed
+                query = query.Where(p => p.Id > lastProcessedId.Value);
+            }
+            
+            return await query
+                .OrderBy(p => p.Id)
+                .ToListAsync();
+        }
+
+        public async Task MarkPhoneOfferAsProcessedAsync(int phoneOfferId)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var offer = await context.PhoneOffers.FindAsync(phoneOfferId);
+            if (offer != null)
+            {
+                offer.IsProcessed = true;
+                offer.UpdatedAt = DateTime.UtcNow;
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async Task SetPhoneOfferErrorAsync(int phoneOfferId, string error)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var offer = await context.PhoneOffers.FindAsync(phoneOfferId);
+            if (offer != null)
+            {
+                offer.SyncError = error;
+                offer.LastSyncAttempt = DateTime.UtcNow;
+                offer.SyncAttempts++;
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async Task ResetScannedAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var allOffers = await context.PhoneOffers.ToListAsync();
+            foreach (var offer in allOffers)
+            {
+                offer.IsProcessed = false;
+            }
+            await context.SaveChangesAsync();
+        }
+
+        public async Task ResetAllAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var allOffers = await context.PhoneOffers.ToListAsync();
+            foreach (var offer in allOffers)
+            {
+                offer.DiscountPercent = 0;
+                offer.MinTopupAmount = 0;
+                offer.GiftAmount = 0;
+                offer.ActiveDays = 0;
+                offer.ValidUntil = null;
+                offer.FullText = null;
+                offer.UpdatedAt = null;
+                offer.IsSynchronized = false;
+                offer.SyncedAt = null;
+                offer.LastSyncAttempt = null;
+                offer.SyncAttempts = 0;
+                offer.SyncError = null;
+                offer.IsProcessed = false;
+            }
+            await context.SaveChangesAsync();
+        }
+
         public async Task<int?> GetLastProcessedPhoneIdAsync()
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
@@ -123,7 +276,7 @@ namespace VodafoneLogin.Services
             }
 
             return await query
-                .OrderByDescending(p => p.CreatedAt)
+                .OrderBy(p => p.Id)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();

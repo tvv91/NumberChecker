@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using System.Threading;
 using VodafoneLogin.Models;
 using VodafoneLogin.Services;
 
@@ -12,33 +13,57 @@ namespace VodafoneLogin.ViewModels
         private readonly IWebViewService _webViewService;
         private readonly IPhoneSearchService _phoneSearchService;
         private readonly IDataService _dataService;
+        private readonly PhoneOffersViewModel? _phoneOffersViewModel;
+        private readonly ConfigViewModel _configViewModel;
 
-        private const string _phoneNumbersFile = "numbers.txt";
-
+        private List<string> _phoneNumbers = new();
         private int _totalNumbers;
+        private CancellationTokenSource? _cancellationTokenSource;
+        private bool _isScanning;
         private int _processedCount;
         private int _offersFoundCount;
         private int _serverErrors;
         private string _currentNumber = "-";
-        private double _delayInputMin = 3;
-        private double _delayInputMax = 5;
-        private double _delaySearchMin = 3;
-        private double _delaySearchMax = 5;
-        private double _delayNextMin = 3;
-        private double _delayNextMax = 5;
         private double _progressInput;
         private double _progressSearch;
         private double _progressNext;
 
-        public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService)
+        public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null)
         {
             _fileService = fileService;
             _webViewService = webViewService;
             _phoneSearchService = phoneSearchService;
             _dataService = dataService;
+            _phoneOffersViewModel = phoneOffersViewModel;
+            _configViewModel = configViewModel ?? new ConfigViewModel();
 
-            LoadPhoneNumbers();
+            ImportPhoneNumbersCommand = new RelayCommand(ImportPhoneNumbers);
+            StartStopScanCommand = new RelayCommand(async () => await StartStopScanAsync());
+            OpenConfigCommand = new RelayCommand(OpenConfig);
+            ResetScannedCommand = new RelayCommand(async () => await ResetScannedAsync(), () => !_isScanning);
+            ResetAllCommand = new RelayCommand(async () => await ResetAllAsync(), () => !_isScanning);
         }
+
+        public ICommand ImportPhoneNumbersCommand { get; }
+        public ICommand StartStopScanCommand { get; }
+        public ICommand OpenConfigCommand { get; }
+        public ICommand ResetScannedCommand { get; }
+        public ICommand ResetAllCommand { get; }
+
+        public bool IsScanning
+        {
+            get => _isScanning;
+            set
+            {
+                _isScanning = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ScanButtonText));
+                ((RelayCommand)ResetScannedCommand).RaiseCanExecuteChanged();
+                ((RelayCommand)ResetAllCommand).RaiseCanExecuteChanged();
+            }
+        }
+
+        public string ScanButtonText => IsScanning ? "Остановить" : "Старт/Продолжить";
 
         public int TotalNumbers
         {
@@ -90,66 +115,6 @@ namespace VodafoneLogin.ViewModels
             }
         }
 
-        public double DelayInputMin
-        {
-            get => _delayInputMin;
-            set
-            {
-                _delayInputMin = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public double DelayInputMax
-        {
-            get => _delayInputMax;
-            set
-            {
-                _delayInputMax = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public double DelaySearchMin
-        {
-            get => _delaySearchMin;
-            set
-            {
-                _delaySearchMin = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public double DelaySearchMax
-        {
-            get => _delaySearchMax;
-            set
-            {
-                _delaySearchMax = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public double DelayNextMin
-        {
-            get => _delayNextMin;
-            set
-            {
-                _delayNextMin = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public double DelayNextMax
-        {
-            get => _delayNextMax;
-            set
-            {
-                _delayNextMax = value;
-                OnPropertyChanged();
-            }
-        }
-
         public double ProgressInput
         {
             get => _progressInput;
@@ -180,10 +145,45 @@ namespace VodafoneLogin.ViewModels
             }
         }
 
-        private void LoadPhoneNumbers()
+        private async void ImportPhoneNumbers()
         {
-            var phoneNumbers = _fileService.ReadPhoneNumbers(_phoneNumbersFile);
-            TotalNumbers = phoneNumbers.Count;
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                Title = "Выберите файл с номерами телефонов"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    _phoneNumbers = _fileService.ReadPhoneNumbers(dialog.FileName);
+                    
+                    // Import phone numbers to database with default states
+                    int importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers);
+                    TotalNumbers = _phoneNumbers.Count;
+                    
+                    // Refresh PhoneOffersViewModel to show newly imported numbers
+                    if (_phoneOffersViewModel != null)
+                    {
+                        await _phoneOffersViewModel.LoadDataAsync();
+                    }
+                    
+                    System.Windows.MessageBox.Show(
+                        $"Импортировано {importedCount} из {_phoneNumbers.Count} номеров телефонов в базу данных",
+                        "Импорт завершен",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show(
+                        $"Ошибка при импорте файла: {ex.Message}",
+                        "Ошибка",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Error);
+                }
+            }
         }
 
         public async Task InitializeWebViewAsync()
@@ -194,61 +194,171 @@ namespace VodafoneLogin.ViewModels
 
         public async Task StartPhoneSearchAsync()
         {
-            var phoneNumbers = _fileService.ReadPhoneNumbers(_phoneNumbersFile);
-            if (phoneNumbers.Count == 0)
+            // This method is kept for backward compatibility with webView navigation
+            await StartContinueScanAsync();
+        }
+
+        public async Task StartStopScanAsync()
+        {
+            if (IsScanning)
             {
-                System.Windows.MessageBox.Show($"Файл {_phoneNumbersFile} не найден или пуст!", "Ошибка", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                await StopScanAsync();
                 return;
             }
 
-            TotalNumbers = phoneNumbers.Count;
+            await StartContinueScanAsync();
+        }
+
+        private async Task StartContinueScanAsync()
+        {
+
+            var unprocessedOffers = await _dataService.GetUnprocessedPhoneOffersAsync();
+            
+            if (unprocessedOffers.Count == 0)
+            {
+                System.Windows.MessageBox.Show(
+                    "Нет необработанных номеров для сканирования",
+                    "Нет данных",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            // Create cancellation token source
+            _cancellationTokenSource = new CancellationTokenSource();
+            IsScanning = true;
+
+            TotalNumbers = unprocessedOffers.Count;
             ProcessedCount = 0;
             OffersFoundCount = 0;
             ServerErrors = 0;
 
-            // Get last processed index - we'll track by phone number index in the list
-            // For simplicity, we'll use a dictionary to map phone numbers to indices
-            int lastProcessedIndex = -1;
-            var phoneNumbersList = _fileService.ReadPhoneNumbers(_phoneNumbersFile);
-            
-            // Try to get last processed phone ID from database
-            var lastProcessedPhoneId = await _dataService.GetLastProcessedPhoneIdAsync();
-            if (lastProcessedPhoneId.HasValue)
+            var configuration = _configViewModel.GetConfiguration();
+
+            try
             {
-                // We need to find which phone number this ID corresponds to
-                // For now, we'll continue from the last index in the file
-                // In a production system, you'd track the phone number itself
+                foreach (var phoneOffer in unprocessedOffers)
+                {
+                    // Check for cancellation
+                    _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+
+                    // Get current configuration (in case user changed it in config window)
+                    configuration = _configViewModel.GetConfiguration();
+
+                    await _phoneSearchService.ProcessPhoneOfferAsync(phoneOffer, configuration, this, _cancellationTokenSource.Token);
+                }
+
+                // Refresh PhoneOffersViewModel
+                if (_phoneOffersViewModel != null)
+                {
+                    await _phoneOffersViewModel.LoadDataAsync();
+                }
+
+                System.Windows.MessageBox.Show("Обработка завершена", "^_^", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             }
-            
-            // Fallback to file-based tracking for now
-            // TODO: Implement proper phone number tracking in database
-
-            var configuration = new ProcessingConfiguration
+            catch (OperationCanceledException)
             {
-                DelayInputMin = DelayInputMin,
-                DelayInputMax = DelayInputMax,
-                DelaySearchMin = DelaySearchMin,
-                DelaySearchMax = DelaySearchMax,
-                DelayNextMin = DelayNextMin,
-                DelayNextMax = DelayNextMax
-            };
+                // Reset progress bars
+                ProgressInput = 0;
+                ProgressSearch = 0;
+                ProgressNext = 0;
 
-            for (int i = lastProcessedIndex + 1; i < phoneNumbers.Count; i++)
+                // Refresh PhoneOffersViewModel
+                if (_phoneOffersViewModel != null)
+                {
+                    await _phoneOffersViewModel.LoadDataAsync();
+                }
+
+                System.Windows.MessageBox.Show(
+                    "Сканирование остановлено пользователем",
+                    "Остановлено",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
+            finally
             {
-                var number = phoneNumbers[i];
+                // Ensure progress bars are reset
+                ProgressInput = 0;
+                ProgressSearch = 0;
+                ProgressNext = 0;
                 
-                // Update configuration from current slider values (in case user changed them)
-                configuration.DelayInputMin = DelayInputMin;
-                configuration.DelayInputMax = DelayInputMax;
-                configuration.DelaySearchMin = DelaySearchMin;
-                configuration.DelaySearchMax = DelaySearchMax;
-                configuration.DelayNextMin = DelayNextMin;
-                configuration.DelayNextMax = DelayNextMax;
-
-                await _phoneSearchService.ProcessPhoneNumberAsync(number, i, configuration, this);
+                IsScanning = false;
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = null;
             }
+        }
 
-            System.Windows.MessageBox.Show("Обработка завершена", "^_^", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        private async Task StopScanAsync()
+        {
+            if (_cancellationTokenSource != null && !_cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                _cancellationTokenSource.Cancel();
+                
+                // Reset progress bars
+                ProgressInput = 0;
+                ProgressSearch = 0;
+                ProgressNext = 0;
+            }
+            await Task.CompletedTask;
+        }
+
+        private void OpenConfig()
+        {
+            var configWindow = new ConfigWindow(_configViewModel);
+            configWindow.Owner = System.Windows.Application.Current.MainWindow;
+            configWindow.ShowDialog();
+        }
+
+        public async Task ResetScannedAsync()
+        {
+            var result = System.Windows.MessageBox.Show(
+                "Сбросить статус обработки для всех записей?",
+                "Подтверждение",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Question);
+
+            if (result == System.Windows.MessageBoxResult.Yes)
+            {
+                await _dataService.ResetScannedAsync();
+                
+                // Refresh PhoneOffersViewModel
+                if (_phoneOffersViewModel != null)
+                {
+                    await _phoneOffersViewModel.LoadDataAsync();
+                }
+
+                System.Windows.MessageBox.Show(
+                    "Статус обработки сброшен для всех записей",
+                    "Готово",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
+        }
+
+        public async Task ResetAllAsync()
+        {
+            var result = System.Windows.MessageBox.Show(
+                "Сбросить все записи к состоянию по умолчанию? Это действие нельзя отменить.",
+                "Подтверждение",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+
+            if (result == System.Windows.MessageBoxResult.Yes)
+            {
+                await _dataService.ResetAllAsync();
+                
+                // Refresh PhoneOffersViewModel
+                if (_phoneOffersViewModel != null)
+                {
+                    await _phoneOffersViewModel.LoadDataAsync();
+                }
+
+                System.Windows.MessageBox.Show(
+                    "Все записи сброшены к состоянию по умолчанию",
+                    "Готово",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
         }
 
         // IProgressReporter implementation

@@ -47,9 +47,21 @@ namespace VodafoneLogin
             services.AddSingleton<IDataService, DataService>();
             services.AddSingleton<IPhoneSearchService, PhoneSearchService>();
 
-            // Register ViewModels
-            services.AddTransient<MainWindowViewModel>();
+            // Register ViewModels - PhoneOffersViewModel and ConfigViewModel must be created first
             services.AddTransient<PhoneOffersViewModel>();
+            services.AddSingleton<ConfigViewModel>();
+            services.AddTransient<MainWindowViewModel>(sp =>
+            {
+                var phoneOffersViewModel = sp.GetRequiredService<PhoneOffersViewModel>();
+                var configViewModel = sp.GetRequiredService<ConfigViewModel>();
+                return new MainWindowViewModel(
+                    sp.GetRequiredService<IFileService>(),
+                    sp.GetRequiredService<IWebViewService>(),
+                    sp.GetRequiredService<IPhoneSearchService>(),
+                    sp.GetRequiredService<IDataService>(),
+                    phoneOffersViewModel,
+                    configViewModel);
+            });
 
             // Register Views
             services.AddTransient<MainWindow>();

@@ -34,12 +34,17 @@ namespace VodafoneLogin.Services
                 await InputPhoneNumberAsync(phoneNumber, configuration, progressReporter);
                 await ClickSearchButtonAsync(configuration, progressReporter);
                 
-                bool hasServerError = await ProcessSearchResultsAsync(phoneNumber, progressReporter);
+                var (hasError, offer) = await ProcessSearchResultsAsync(phoneNumber, progressReporter);
 
-                if (hasServerError)
+                if (hasError)
                 {
                     await HandleServerErrorAsync(phoneNumber, index, progressReporter);
                     return;
+                }
+
+                if (offer != null)
+                {
+                    await SaveOfferResultAsync(phoneNumber, offer, progressReporter);
                 }
 
                 await SaveProgressAsync(index, progressReporter);
@@ -58,12 +63,13 @@ namespace VodafoneLogin.Services
         private async Task InputPhoneNumberAsync(
             string phoneNumber,
             ProcessingConfiguration configuration,
-            IProgressReporter? progressReporter)
+            IProgressReporter? progressReporter,
+            CancellationToken cancellationToken = default)
         {
             await _webViewService.WaitForElementAsync("#phoneNumber");
 
             int delayInput = GetRandomDelay(configuration.DelayInputMin, configuration.DelayInputMax);
-            await DelayWithProgressAsync(delayInput, progressReporter != null ? progress => progressReporter.ReportInputProgress(progress) : null);
+            await DelayWithProgressAsync(delayInput, progressReporter != null ? progress => progressReporter.ReportInputProgress(progress) : null, cancellationToken);
 
             await _webViewService.ExecuteScriptAsync($@"
             (function(){{
@@ -80,12 +86,13 @@ namespace VodafoneLogin.Services
 
         private async Task ClickSearchButtonAsync(
             ProcessingConfiguration configuration,
-            IProgressReporter? progressReporter)
+            IProgressReporter? progressReporter,
+            CancellationToken cancellationToken = default)
         {
             await _webViewService.WaitForButtonByTextAsync("Пошук");
 
             int delaySearch = GetRandomDelay(configuration.DelaySearchMin, configuration.DelaySearchMax);
-            await DelayWithProgressAsync(delaySearch, progressReporter != null ? progress => progressReporter.ReportSearchProgress(progress) : null);
+            await DelayWithProgressAsync(delaySearch, progressReporter != null ? progress => progressReporter.ReportSearchProgress(progress) : null, cancellationToken);
 
             await _webViewService.ExecuteScriptAsync(@"
             (function(){
@@ -98,15 +105,16 @@ namespace VodafoneLogin.Services
             ");
         }
 
-        private async Task<bool> ProcessSearchResultsAsync(
+        private async Task<(bool hasError, Offer? offer)> ProcessSearchResultsAsync(
             string phoneNumber,
-            IProgressReporter? progressReporter)
+            IProgressReporter? progressReporter,
+            CancellationToken cancellationToken = default)
         {
             await _webViewService.WaitForOffersLoadedAsync();
 
             if (await _webViewService.CheckServerErrorToastAsync())
             {
-                return true;
+                return (true, null);
             }
 
             string rawOffersJson = await _webViewService.GetOffersJsonAsync();
@@ -117,10 +125,10 @@ namespace VodafoneLogin.Services
 
             if (offers != null && offers.Count > 0)
             {
-                await SaveOfferResultAsync(phoneNumber, offers[0], progressReporter);
+                return (false, offers[0]);
             }
 
-            return false;
+            return (false, null);
         }
 
         private async Task SaveOfferResultAsync(
@@ -131,6 +139,75 @@ namespace VodafoneLogin.Services
             progressReporter?.ReportOffersFound(1);
             int offerId = await _dataService.SavePhoneOfferAsync(phoneNumber, offer);
             await _dataService.SetLastProcessedPhoneIdAsync(offerId);
+        }
+
+        public async Task ProcessPhoneOfferAsync(
+            PhoneOffer phoneOffer,
+            ProcessingConfiguration configuration,
+            IProgressReporter? progressReporter = null,
+            CancellationToken cancellationToken = default)
+        {
+            progressReporter?.ReportCurrentNumber(phoneOffer.PhoneNumber);
+
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await InputPhoneNumberAsync(phoneOffer.PhoneNumber, configuration, progressReporter, cancellationToken);
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                await ClickSearchButtonAsync(configuration, progressReporter, cancellationToken);
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                var (hasError, offer) = await ProcessSearchResultsAsync(phoneOffer.PhoneNumber, progressReporter, cancellationToken);
+
+                if (hasError)
+                {
+                    await HandleServerErrorForPhoneOfferAsync(phoneOffer, progressReporter);
+                    return;
+                }
+
+                if (offer != null)
+                {
+                    // Save the offer data (this will update the existing PhoneOffer)
+                    await _dataService.SavePhoneOfferAsync(phoneOffer.PhoneNumber, offer);
+                    progressReporter?.ReportOffersFound(1);
+                }
+
+                // Mark as processed on success
+                await _dataService.MarkPhoneOfferAsProcessedAsync(phoneOffer.Id);
+                await _dataService.SetLastProcessedPhoneIdAsync(phoneOffer.Id);
+                progressReporter?.ReportProcessed(1);
+                
+                cancellationToken.ThrowIfCancellationRequested();
+                await DelayBeforeNextAsync(configuration, progressReporter, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // Re-throw cancellation to be handled by caller
+                throw;
+            }
+            catch (Exception ex) when (ex.Message == "SERVER_ERROR")
+            {
+                await HandleServerErrorForPhoneOfferAsync(phoneOffer, progressReporter);
+            }
+            catch (Exception ex)
+            {
+                // Set error and continue to next number
+                await _dataService.SetPhoneOfferErrorAsync(phoneOffer.Id, ex.Message);
+                progressReporter?.ReportProcessed(1);
+                await _dataService.SetLastProcessedPhoneIdAsync(phoneOffer.Id);
+            }
+        }
+
+        private async Task HandleServerErrorForPhoneOfferAsync(
+            PhoneOffer phoneOffer,
+            IProgressReporter? progressReporter)
+        {
+            progressReporter?.ReportServerErrors(1);
+            await _dataService.SetPhoneOfferErrorAsync(phoneOffer.Id, "Server error");
+            progressReporter?.ReportProcessed(1);
+            await _dataService.SetLastProcessedPhoneIdAsync(phoneOffer.Id);
+            await Task.Delay(5000);
         }
 
         private async Task HandleServerErrorAsync(
@@ -171,17 +248,18 @@ namespace VodafoneLogin.Services
 
         private async Task DelayBeforeNextAsync(
             ProcessingConfiguration configuration,
-            IProgressReporter? progressReporter)
+            IProgressReporter? progressReporter,
+            CancellationToken cancellationToken = default)
         {
             int delayNext = GetRandomDelay(configuration.DelayNextMin, configuration.DelayNextMax);
-            await DelayWithProgressAsync(delayNext, progressReporter != null ? progress => progressReporter.ReportNextProgress(progress) : null);
+            await DelayWithProgressAsync(delayNext, progressReporter != null ? progress => progressReporter.ReportNextProgress(progress) : null, cancellationToken);
         }
 
-        private async Task DelayWithProgressAsync(int milliseconds, Action<double>? progressCallback)
+        private async Task DelayWithProgressAsync(int milliseconds, Action<double>? progressCallback, CancellationToken cancellationToken = default)
         {
             if (progressCallback == null)
             {
-                await Task.Delay(milliseconds);
+                await Task.Delay(milliseconds, cancellationToken);
                 return;
             }
 
@@ -189,8 +267,9 @@ namespace VodafoneLogin.Services
             int steps = milliseconds / interval;
             for (int i = 0; i <= steps; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 progressCallback((i * 100.0) / steps);
-                await Task.Delay(interval);
+                await Task.Delay(interval, cancellationToken);
             }
             progressCallback(0);
         }
