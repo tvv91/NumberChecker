@@ -6,6 +6,8 @@ namespace VodafoneLogin.Services
     public class WebViewService : IWebViewService
     {
         public WebView2? WebView { get; set; }
+        public string? CurrentUrl { get; private set; }
+        public event EventHandler<string>? NavigationCompleted;
 
         public async Task InitializeAsync()
         {
@@ -13,6 +15,16 @@ namespace VodafoneLogin.Services
                 throw new InvalidOperationException("WebView is not set");
 
             await WebView.EnsureCoreWebView2Async();
+            
+            // Subscribe to navigation events
+            if (WebView.CoreWebView2 != null)
+            {
+                WebView.CoreWebView2.NavigationCompleted += (sender, e) =>
+                {
+                    CurrentUrl = WebView.CoreWebView2.Source;
+                    NavigationCompleted?.Invoke(this, CurrentUrl);
+                };
+            }
         }
 
         public async Task NavigateAsync(string url)
@@ -199,6 +211,41 @@ namespace VodafoneLogin.Services
             }
 
             return false; // таймаут
+        }
+
+        public async Task<bool> CheckAuthenticationAsync()
+        {
+            if (WebView?.CoreWebView2 == null)
+                return false;
+
+            // Wait a bit for navigation to complete
+            await Task.Delay(1000);
+
+            CurrentUrl = WebView.CoreWebView2.Source;
+            
+            // Check if we're on the dashboard page (authenticated) or redirected to login
+            if (string.IsNullOrEmpty(CurrentUrl))
+                return false;
+
+            // If URL contains /dashboard/personal-offers-main/personal-offers, we're authenticated
+            // If URL is just https://partner.vodafone.ua (without /dashboard), we're not authenticated
+            bool isAuthenticated = CurrentUrl.Contains("/dashboard/personal-offers-main/personal-offers");
+            
+            // Also check if the phone number input field exists (indicates authenticated dashboard)
+            if (!isAuthenticated)
+            {
+                try
+                {
+                    string hasPhoneField = await WebView.CoreWebView2.ExecuteScriptAsync(@"document.querySelector('#phoneNumber') ? '1' : '0';");
+                    isAuthenticated = hasPhoneField.Contains("1");
+                }
+                catch
+                {
+                    // If script fails, assume not authenticated
+                }
+            }
+
+            return isAuthenticated;
         }
     }
 }

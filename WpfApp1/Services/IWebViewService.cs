@@ -14,6 +14,9 @@ namespace VodafoneLogin.Services
         Task<string> GetOffersJsonAsync();
         Task ExecuteScriptAsync(string script);
         Task<bool> WaitForLoginOrNumberFieldAsync(string numberFieldSelector = "#phoneNumber", int timeoutMs = 5000);
+        Task<bool> CheckAuthenticationAsync();
+        string? CurrentUrl { get; }
+        event EventHandler<string>? NavigationCompleted;
     }
 }
 

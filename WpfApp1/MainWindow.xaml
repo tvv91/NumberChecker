@@ -9,6 +9,7 @@
         <converters:RowColorConverter x:Key="RowColorConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:ColumnWidthConverter x:Key="ColumnWidthConverter"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         
         <!-- Modern Button Styles -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
@@ -41,6 +42,12 @@
                 <Trigger Property="IsPressed" Value="True">
                     <Setter Property="Background" Value="#E9ECEF"/>
                 </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#E9ECEF"/>
+                    <Setter Property="Foreground" Value="#ADB5BD"/>
+                    <Setter Property="BorderBrush" Value="#DEE2E6"/>
+                    <Setter Property="Cursor" Value="No"/>
+                </Trigger>
             </Style.Triggers>
         </Style>
         
@@ -56,6 +63,12 @@
                 <Trigger Property="IsPressed" Value="True">
                     <Setter Property="Background" Value="#004085"/>
                 </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#B0BEC5"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="BorderBrush" Value="#90A4AE"/>
+                    <Setter Property="Cursor" Value="No"/>
+                </Trigger>
             </Style.Triggers>
         </Style>
         
@@ -70,6 +83,12 @@
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
                     <Setter Property="Background" Value="#545B62"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#B0BEC5"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="BorderBrush" Value="#90A4AE"/>
+                    <Setter Property="Cursor" Value="No"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -121,7 +140,7 @@
 
         <!-- TabControl for WebView and Data -->
         <TabControl x:Name="tabControl" Grid.Row="0">
-            <TabItem Header="WebView">
+            <TabItem Header="WebView" x:Name="webViewTab">
                 <wv2:WebView2 x:Name="webView"
                               NavigationCompleted="webView_NavigationCompleted"/>
             </TabItem>
@@ -353,32 +372,40 @@
                 </Grid.ColumnDefinitions>
                 
                 <!-- Left: Action Buttons -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="15,10">
-                    <Button Content="Импорт номеров" 
-                            Command="{Binding ImportPhoneNumbersCommand}"
-                            Style="{StaticResource ModernButtonStyle}"
-                            Margin="0,0,8,0"/>
+                <StackPanel Grid.Column="0" Orientation="Vertical" Margin="15,10">
+                    <!-- Authentication Status Message -->
+                    <Border Background="#FFF3CD" BorderBrush="#FFC107" BorderThickness="1" CornerRadius="4" 
+                            Padding="8,6" Margin="0,0,0,8" 
+                            Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚠" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Требуется авторизация. Пожалуйста, войдите в систему в WebView." 
+                                     FontSize="12" FontWeight="SemiBold" Foreground="#856404" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
                     
-                    <Button Content="{Binding ScanButtonText}" 
-                            Command="{Binding StartStopScanCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Margin="0,0,8,0"/>
-                    
-                    <Button Content="⚙ Config" 
-                            Command="{Binding OpenConfigCommand}"
-                            Style="{StaticResource ModernButtonStyle}"
-                            Margin="0,0,8,0"/>
-                    
-                    <Separator Style="{StaticResource ModernSeparatorStyle}" Margin="8,0"/>
-                    
-                    <Button Content="Сбросить обработанные" 
-                            Command="{Binding ResetScannedCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Margin="0,0,8,0"/>
-                    
-                    <Button Content="Сбросить все" 
-                            Command="{Binding ResetAllCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Импорт номеров" 
+                                Command="{Binding ImportPhoneNumbersCommand}"
+                                Style="{StaticResource ModernButtonStyle}"
+                                Margin="0,0,8,0"/>
+                        
+                        <Button Content="{Binding ScanButtonText}" 
+                                Command="{Binding StartStopScanCommand}"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Margin="0,0,8,0"/>
+                        
+                        <Button Content="⚙ Config" 
+                                Command="{Binding OpenConfigCommand}"
+                                Style="{StaticResource ModernButtonStyle}"
+                                Margin="0,0,8,0"/>
+                        
+                        <Separator Style="{StaticResource ModernSeparatorStyle}" Margin="8,0"/>
+                        
+                        <Button Content="Сбросить все" 
+                                Command="{Binding ResetAllCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"/>
+                    </StackPanel>
                 </StackPanel>
                 
                 <!-- Center: Statistics -->

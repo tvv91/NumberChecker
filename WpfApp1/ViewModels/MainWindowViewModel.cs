@@ -27,6 +27,7 @@ namespace VodafoneLogin.ViewModels
         private double _progressInput;
         private double _progressSearch;
         private double _progressNext;
+        private bool _isAuthenticated;
 
         public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null)
         {
@@ -37,11 +38,17 @@ namespace VodafoneLogin.ViewModels
             _phoneOffersViewModel = phoneOffersViewModel;
             _configViewModel = configViewModel ?? new ConfigViewModel();
 
-            ImportPhoneNumbersCommand = new RelayCommand(ImportPhoneNumbers);
-            StartStopScanCommand = new RelayCommand(async () => await StartStopScanAsync());
-            OpenConfigCommand = new RelayCommand(OpenConfig);
-            ResetScannedCommand = new RelayCommand(async () => await ResetScannedAsync(), () => !_isScanning);
-            ResetAllCommand = new RelayCommand(async () => await ResetAllAsync(), () => !_isScanning);
+            // Subscribe to navigation events to check authentication
+            _webViewService.NavigationCompleted += async (s, url) =>
+            {
+                await CheckAuthenticationStatusAsync();
+            };
+
+            ImportPhoneNumbersCommand = new RelayCommand(ImportPhoneNumbers, () => _isAuthenticated);
+            StartStopScanCommand = new RelayCommand(async () => await StartStopScanAsync(), () => _isAuthenticated);
+            OpenConfigCommand = new RelayCommand(OpenConfig, () => _isAuthenticated);
+            ResetScannedCommand = new RelayCommand(async () => await ResetScannedAsync(), () => _isAuthenticated && !_isScanning);
+            ResetAllCommand = new RelayCommand(async () => await ResetAllAsync(), () => _isAuthenticated && !_isScanning);
         }
 
         public ICommand ImportPhoneNumbersCommand { get; }
@@ -145,6 +152,25 @@ namespace VodafoneLogin.ViewModels
             }
         }
 
+        public bool IsAuthenticated
+        {
+            get => _isAuthenticated;
+            set
+            {
+                if (_isAuthenticated != value)
+                {
+                    _isAuthenticated = value;
+                    OnPropertyChanged();
+                    // Update command states
+                    ((RelayCommand)ImportPhoneNumbersCommand).RaiseCanExecuteChanged();
+                    ((RelayCommand)StartStopScanCommand).RaiseCanExecuteChanged();
+                    ((RelayCommand)OpenConfigCommand).RaiseCanExecuteChanged();
+                    ((RelayCommand)ResetScannedCommand).RaiseCanExecuteChanged();
+                    ((RelayCommand)ResetAllCommand).RaiseCanExecuteChanged();
+                }
+            }
+        }
+
         private async void ImportPhoneNumbers()
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
@@ -190,6 +216,14 @@ namespace VodafoneLogin.ViewModels
         {
             await _webViewService.InitializeAsync();
             await _webViewService.NavigateAsync("https://partner.vodafone.ua/dashboard/personal-offers-main/personal-offers");
+            // Check authentication after navigation
+            await CheckAuthenticationStatusAsync();
+        }
+
+        public async Task CheckAuthenticationStatusAsync()
+        {
+            bool authenticated = await _webViewService.CheckAuthenticationAsync();
+            IsAuthenticated = authenticated;
         }
 
         public async Task StartPhoneSearchAsync()

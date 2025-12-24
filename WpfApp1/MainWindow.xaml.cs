@@ -25,6 +25,9 @@ namespace VodafoneLogin
             // Set main ViewModel as DataContext
             DataContext = _viewModel;
             
+            // Subscribe to authentication changes to show/hide WebView tab
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            
             // Set PhoneOffersViewModel for the second tab
             Loaded += async (s, e) =>
             {
@@ -40,6 +43,9 @@ namespace VodafoneLogin
                     // Set initial column visibility
                     UpdateColumnVisibility();
                 }
+                
+                // Set initial WebView tab visibility
+                UpdateWebViewTabVisibility();
             };
             
             // Set the WebView instance in the service
@@ -48,7 +54,11 @@ namespace VodafoneLogin
 
         private async void webView_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
         {
-            // Navigation completed - no auto-start scan
+            // Check authentication status after navigation
+            if (_viewModel != null)
+            {
+                await _viewModel.CheckAuthenticationStatusAsync();
+            }
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -56,11 +66,44 @@ namespace VodafoneLogin
             await _viewModel.InitializeWebViewAsync();
         }
 
+        private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainWindowViewModel.IsAuthenticated))
+            {
+                UpdateWebViewTabVisibility();
+            }
+        }
+
         private void PhoneOffersViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(PhoneOffersViewModel.ShowAllFields) && phoneOffersDataGrid != null)
             {
                 UpdateColumnVisibility();
+            }
+        }
+
+        private void UpdateWebViewTabVisibility()
+        {
+            if (tabControl == null || webViewTab == null || _viewModel == null)
+                return;
+
+            // Remove or add the WebView tab based on authentication status
+            if (_viewModel.IsAuthenticated)
+            {
+                // Hide WebView tab when authenticated
+                if (tabControl.Items.Contains(webViewTab))
+                {
+                    tabControl.Items.Remove(webViewTab);
+                }
+            }
+            else
+            {
+                // Show WebView tab when not authenticated
+                if (!tabControl.Items.Contains(webViewTab))
+                {
+                    // Insert at the beginning
+                    tabControl.Items.Insert(0, webViewTab);
+                }
             }
         }
 
