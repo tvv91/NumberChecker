@@ -6,18 +6,15 @@ namespace VodafoneLogin.Services
     public class PhoneSearchService : IPhoneSearchService
     {
         private readonly IWebViewService _webViewService;
-        private readonly IFileService _fileService;
         private readonly IDataService _dataService;
+        private readonly ILoggerService _logger;
         private readonly Random _rand = new();
 
-        private const string _logFile = "errors.log";
-        private const string _errorNumbers = "errornumbers.log";
-
-        public PhoneSearchService(IWebViewService webViewService, IFileService fileService, IDataService dataService)
+        public PhoneSearchService(IWebViewService webViewService, IDataService dataService, ILoggerService logger)
         {
             _webViewService = webViewService;
-            _fileService = fileService;
             _dataService = dataService;
+            _logger = logger;
         }
 
         public async Task ProcessPhoneNumberAsync(
@@ -235,7 +232,7 @@ namespace VodafoneLogin.Services
             IProgressReporter? progressReporter)
         {
             progressReporter?.ReportServerErrors(1);
-            _fileService.AppendErrorNumber(phoneNumber, _errorNumbers);
+            _logger.LogError($"Server error processing phone number: {phoneNumber}");
             progressReporter?.ReportProcessed(1);
             // Progress is now tracked in database via PhoneOffer records
             await Task.Delay(5000);
@@ -247,10 +244,7 @@ namespace VodafoneLogin.Services
             Exception ex,
             IProgressReporter? progressReporter)
         {
-            _fileService.AppendErrorNumber(phoneNumber, _errorNumbers);
-            _fileService.AppendLog(
-                $"{DateTime.Now}: Ошибка при обработке номера {phoneNumber}\n{ex}\n",
-                _logFile);
+            _logger.LogError($"Error processing phone number: {phoneNumber}", ex);
             progressReporter?.ReportProcessed(1);
             // Progress is now tracked in database via PhoneOffer records
             await Task.CompletedTask;
