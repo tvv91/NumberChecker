@@ -20,7 +20,7 @@ namespace VodafoneLogin.Data
             modelBuilder.Entity<PhoneOffer>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.PhoneNormalized).IsUnique();
+                entity.HasIndex(e => e.PhoneNumber).IsUnique();
                 entity.HasIndex(e => e.CreatedAt);
                 entity.HasIndex(e => e.ValidUntil);
             });

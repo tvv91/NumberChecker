@@ -2,8 +2,14 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:converters="clr-namespace:VodafoneLogin.Converters"
         Title="Vodafone Login" Height="800" Width="1000"
         Loaded="Window_Loaded">
+    <Window.Resources>
+        <converters:RowColorConverter x:Key="RowColorConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:ColumnWidthConverter x:Key="ColumnWidthConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -39,6 +45,9 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 
                                 <TextBox Grid.Column="0" 
@@ -62,12 +71,27 @@
                                           IsChecked="{Binding HasGift, TargetNullValue=False}"
                                           Margin="5,0"/>
                                 
-                                <Button Grid.Column="3" 
+                                <CheckBox Grid.Column="3" 
+                                          Content="Realtime" 
+                                          IsChecked="{Binding IsRealtime}"
+                                          Margin="5,0"/>
+                                
+                                <CheckBox Grid.Column="4" 
+                                          Content="Use colors" 
+                                          IsChecked="{Binding UseColors}"
+                                          Margin="5,0"/>
+                                
+                                <CheckBox Grid.Column="5" 
+                                          Content="All fields" 
+                                          IsChecked="{Binding ShowAllFields}"
+                                          Margin="5,0"/>
+                                
+                                <Button Grid.Column="6" 
                                         Content="Применить" 
                                         Command="{Binding ApplyFilterCommand}"
                                         Margin="5,0" Padding="10,5"/>
                                 
-                                <Button Grid.Column="4" 
+                                <Button Grid.Column="7" 
                                         Content="Очистить" 
                                         Command="{Binding ClearFilterCommand}"
                                         Margin="5,0" Padding="10,5"/>
@@ -82,19 +106,81 @@
                               IsReadOnly="True"
                               GridLinesVisibility="All"
                               HeadersVisibility="Column"
-                              Margin="5">
+                              Margin="5"
+                              x:Name="phoneOffersDataGrid">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
                             <DataGridTextColumn Header="Номер телефона" Binding="{Binding PhoneNumber}" Width="150"/>
-                            <DataGridTextColumn Header="Скидка %" Binding="{Binding DiscountPercent}" Width="80"/>
-                            <DataGridTextColumn Header="Мин. пополнение" Binding="{Binding MinTopupAmount, StringFormat='{}{0:F2} грн'}" Width="120"/>
-                            <DataGridTextColumn Header="Подарок" Binding="{Binding GiftAmount, StringFormat='{}{0:F2} грн'}" Width="100"/>
-                            <DataGridTextColumn Header="Дней действия" Binding="{Binding ActiveDays}" Width="100"/>
-                            <DataGridTextColumn Header="Действует до" Binding="{Binding ValidUntil, StringFormat='{}{0:yyyy-MM-dd}'}" Width="120"/>
+                            <DataGridTextColumn Header="Скидка %" Binding="{Binding DiscountPercent}" Width="80" CanUserSort="True" SortMemberPath="DiscountPercent"/>
+                            <DataGridTextColumn Header="Мин. пополнение" Binding="{Binding MinTopupAmount, StringFormat='{}{0:F2} грн'}" Width="120" CanUserSort="True" SortMemberPath="MinTopupAmount"/>
+                            <DataGridTextColumn Header="Подарок" Binding="{Binding GiftAmount, StringFormat='{}{0:F2} грн'}" Width="100" CanUserSort="True" SortMemberPath="GiftAmount"/>
+                            <DataGridTextColumn Header="Дней действия" Binding="{Binding ActiveDays}" Width="100" CanUserSort="True" SortMemberPath="ActiveDays"/>
+                            <DataGridTextColumn Header="Действует до" Binding="{Binding ValidUntil, StringFormat='{}{0:yyyy-MM-dd}'}" Width="120" CanUserSort="True" SortMemberPath="ValidUntil"/>
+                            <DataGridTextColumn Header="Создано" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140"/>
+                            <DataGridTemplateColumn Header="Обновлено" Width="140" x:Name="colUpdatedAt">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding UpdatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="IsSynchronized" Width="100" x:Name="colIsSynchronized">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding IsSynchronized}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="SyncedAt" Width="140" x:Name="colSyncedAt">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding SyncedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="LastSyncAttempt" Width="140" x:Name="colLastSyncAttempt">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding LastSyncAttempt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="SyncAttempts" Width="100" x:Name="colSyncAttempts">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding SyncAttempts}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="SyncError" Width="200" x:Name="colSyncError">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding SyncError}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="IsProcessed" Width="100" x:Name="colIsProcessed">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding IsProcessed}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Ошибка" Binding="{Binding IsError}" Width="60"/>
                             <DataGridTextColumn Header="Описание ошибки" Binding="{Binding ErrorDescription}" Width="200"/>
-                            <DataGridTextColumn Header="Создано" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140"/>
                         </DataGrid.Columns>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource RowColorConverter}">
+                                            <Binding Path="."/>
+                                            <Binding Path="DataContext.UseColors" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </DataGrid.RowStyle>
                     </DataGrid>
                     
                     <!-- Pagination -->
@@ -143,19 +229,19 @@
             <!-- Ввод номера -->
             <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="10,0">
                 <TextBlock Text="Ввод номера" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
-                <ProgressBar Minimum="0" Maximum="100" Height="20" Margin="0,5,0,0" Value="{Binding ProgressInput}"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="8" Margin="0,5,0,0" Value="{Binding ProgressInput}"/>
             </StackPanel>
 
             <!-- Нажатие на поиск -->
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
                 <TextBlock Text="Нажатие на поиск" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
-                <ProgressBar Minimum="0" Maximum="100" Height="20" Margin="0,5,0,0" Value="{Binding ProgressSearch}"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="8" Margin="0,5,0,0" Value="{Binding ProgressSearch}"/>
             </StackPanel>
 
             <!-- Следующий номер -->
             <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="10,0">
                 <TextBlock Text="Следующий номер" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
-                <ProgressBar Minimum="0" Maximum="100" Height="20" Margin="0,5,0,0" Value="{Binding ProgressNext}"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="8" Margin="0,5,0,0" Value="{Binding ProgressNext}"/>
             </StackPanel>
         </Grid>
         <!-- Status -->

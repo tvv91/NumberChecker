@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using System.Windows.Threading;
 using VodafoneLogin.Models;
 using VodafoneLogin.Services;
 
@@ -18,6 +19,10 @@ namespace VodafoneLogin.ViewModels
         private int _pageSize = 50;
         private int _totalCount;
         private int _totalPages;
+        private bool _isRealtime;
+        private bool _useColors;
+        private bool _showAllFields;
+        private DispatcherTimer? _realtimeTimer;
 
         public PhoneOffersViewModel(IDataService dataService)
         {
@@ -124,6 +129,47 @@ namespace VodafoneLogin.ViewModels
 
         public string PageInfo => $"Страница {CurrentPage} из {TotalPages} (Всего: {TotalCount})";
 
+        public bool IsRealtime
+        {
+            get => _isRealtime;
+            set
+            {
+                if (_isRealtime != value)
+                {
+                    _isRealtime = value;
+                    OnPropertyChanged();
+                    if (value)
+                    {
+                        StartRealtimeUpdates();
+                    }
+                    else
+                    {
+                        StopRealtimeUpdates();
+                    }
+                }
+            }
+        }
+
+        public bool UseColors
+        {
+            get => _useColors;
+            set
+            {
+                _useColors = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool ShowAllFields
+        {
+            get => _showAllFields;
+            set
+            {
+                _showAllFields = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ICommand LoadDataCommand { get; }
         public ICommand NextPageCommand { get; }
         public ICommand PreviousPageCommand { get; }
@@ -154,6 +200,34 @@ namespace VodafoneLogin.ViewModels
             ((RelayCommand)PreviousPageCommand).RaiseCanExecuteChanged();
             ((RelayCommand)FirstPageCommand).RaiseCanExecuteChanged();
             ((RelayCommand)LastPageCommand).RaiseCanExecuteChanged();
+        }
+
+        private void StartRealtimeUpdates()
+        {
+            if (_realtimeTimer == null)
+            {
+                _realtimeTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(2) // Update every 2 seconds
+                };
+                _realtimeTimer.Tick += async (s, e) => await LoadDataAsync();
+            }
+            _realtimeTimer.Start();
+        }
+
+        private void StopRealtimeUpdates()
+        {
+            if (_realtimeTimer != null)
+            {
+                _realtimeTimer.Stop();
+                _realtimeTimer = null;
+            }
+        }
+
+        // Cleanup method to be called when view model is no longer needed
+        public void Dispose()
+        {
+            StopRealtimeUpdates();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

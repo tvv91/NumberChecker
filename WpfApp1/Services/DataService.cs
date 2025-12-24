@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VodafoneLogin.Data;
 using VodafoneLogin.Models;
-using System.Text.RegularExpressions;
 
 namespace VodafoneLogin.Services
 {
@@ -64,20 +63,13 @@ namespace VodafoneLogin.Services
             }
         }
 
-        private string NormalizePhoneNumber(string phoneNumber)
-        {
-            // Remove all non-digit characters
-            return Regex.Replace(phoneNumber, @"\D", "");
-        }
 
         public async Task<int> SavePhoneOfferAsync(string phoneNumber, Offer offer)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
-            string normalized = NormalizePhoneNumber(phoneNumber);
-            
             var existingOffer = await context.PhoneOffers
-                .FirstOrDefaultAsync(p => p.PhoneNormalized == normalized);
+                .FirstOrDefaultAsync(p => p.PhoneNumber == phoneNumber);
 
             if (existingOffer != null)
             {
@@ -97,7 +89,6 @@ namespace VodafoneLogin.Services
                 var phoneOffer = new PhoneOffer
                 {
                     PhoneNumber = phoneNumber,
-                    PhoneNormalized = normalized,
                     DiscountPercent = offer.Discount,
                     MinTopupAmount = offer.MinTopUp,
                     GiftAmount = offer.Gift,
@@ -116,11 +107,9 @@ namespace VodafoneLogin.Services
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
-            string normalized = NormalizePhoneNumber(phoneNumber);
-            
             // Check if phone number already exists
             var existingOffer = await context.PhoneOffers
-                .FirstOrDefaultAsync(p => p.PhoneNormalized == normalized);
+                .FirstOrDefaultAsync(p => p.PhoneNumber == phoneNumber);
 
             if (existingOffer != null)
             {
@@ -132,7 +121,6 @@ namespace VodafoneLogin.Services
             var phoneOffer = new PhoneOffer
             {
                 PhoneNumber = phoneNumber,
-                PhoneNormalized = normalized,
                 DiscountPercent = 0,
                 MinTopupAmount = 0,
                 GiftAmount = 0,
@@ -253,6 +241,19 @@ namespace VodafoneLogin.Services
             {
                 offer.IsProcessed = false;
             }
+            
+            // Reset LastProcessedPhoneId using the same context
+            var syncState = await context.SyncStates.FindAsync(1);
+            if (syncState == null)
+            {
+                syncState = new SyncState { Id = 1, LastProcessedPhoneId = null };
+                context.SyncStates.Add(syncState);
+            }
+            else
+            {
+                syncState.LastProcessedPhoneId = null;
+            }
+            
             await context.SaveChangesAsync();
         }
 
@@ -277,6 +278,19 @@ namespace VodafoneLogin.Services
                 offer.SyncError = null;
                 offer.IsProcessed = false;
             }
+            
+            // Reset LastProcessedPhoneId using the same context
+            var syncState = await context.SyncStates.FindAsync(1);
+            if (syncState == null)
+            {
+                syncState = new SyncState { Id = 1, LastProcessedPhoneId = null };
+                context.SyncStates.Add(syncState);
+            }
+            else
+            {
+                syncState.LastProcessedPhoneId = null;
+            }
+            
             await context.SaveChangesAsync();
         }
 
@@ -313,7 +327,7 @@ namespace VodafoneLogin.Services
 
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
-                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter) || p.PhoneNormalized.Contains(phoneFilter));
+                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
             }
 
             if (hasDiscount.HasValue)
@@ -347,7 +361,7 @@ namespace VodafoneLogin.Services
 
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
-                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter) || p.PhoneNormalized.Contains(phoneFilter));
+                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
             }
 
             if (hasDiscount.HasValue)

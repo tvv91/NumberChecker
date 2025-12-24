@@ -10,7 +10,6 @@ namespace VodafoneLogin.Services
         private readonly IDataService _dataService;
         private readonly Random _rand = new();
 
-        private const string _phoneNumbersFile = "numbers.txt";
         private const string _logFile = "errors.log";
         private const string _errorNumbers = "errornumbers.log";
 
@@ -125,7 +124,21 @@ namespace VodafoneLogin.Services
 
             if (offers != null && offers.Count > 0)
             {
-                return (false, offers[0]);
+                var offer = offers[0];
+                
+                // Count offer as found only if at least one of these fields is not zero:
+                // ActiveDays, Discount, Gift, MinTopUp
+                bool hasValidOffer = offer.ActiveDays != 0 || 
+                                     offer.Discount != 0 || 
+                                     offer.Gift != 0 || 
+                                     offer.MinTopUp != 0;
+                
+                if (hasValidOffer)
+                {
+                    progressReporter?.ReportOffersFound(1);
+                }
+                
+                return (false, offer);
             }
 
             return (false, null);
@@ -136,7 +149,7 @@ namespace VodafoneLogin.Services
             Offer offer,
             IProgressReporter? progressReporter)
         {
-            progressReporter?.ReportOffersFound(1);
+            // ReportOffersFound is now called in ProcessSearchResultsAsync when offers are found
             int offerId = await _dataService.SavePhoneOfferAsync(phoneNumber, offer);
             await _dataService.SetLastProcessedPhoneIdAsync(offerId);
         }
@@ -169,8 +182,8 @@ namespace VodafoneLogin.Services
                 if (offer != null)
                 {
                     // Save the offer data (this will update the existing PhoneOffer)
+                    // ReportOffersFound is now called in ProcessSearchResultsAsync when offers are found
                     await _dataService.SavePhoneOfferAsync(phoneOffer.PhoneNumber, offer);
-                    progressReporter?.ReportOffersFound(1);
                 }
 
                 // Clear error if it was set previously (successful processing)

@@ -11,10 +11,6 @@ namespace VodafoneLogin.Models
         [MaxLength(50)]
         public string PhoneNumber { get; set; } = null!;       // оригинальный номер
 
-        [Required]
-        [MaxLength(50)]
-        public string PhoneNormalized { get; set; } = null!;  // нормализованный номер для уникальности
-
         public int DiscountPercent { get; set; } = 0;        // процентная скидка
         public decimal MinTopupAmount { get; set; } = 0;     // минимальное пополнение
         public decimal GiftAmount { get; set; } = 0;         // подарочный бонус
