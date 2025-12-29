@@ -29,6 +29,9 @@ namespace VodafoneLogin.ViewModels
         private double _progressSearch;
         private double _progressNext;
         private bool _isAuthenticated;
+        private string _iterationInfo = string.Empty;
+        private int _currentIteration = 0;
+        private int _totalIterations = 0;
 
         public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null, ILoggerService? logger = null)
         {
@@ -173,6 +176,50 @@ namespace VodafoneLogin.ViewModels
             }
         }
 
+        public string IterationInfo
+        {
+            get => _iterationInfo;
+            set
+            {
+                _iterationInfo = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int CurrentIteration
+        {
+            get => _currentIteration;
+            set
+            {
+                _currentIteration = value;
+                OnPropertyChanged();
+                UpdateIterationInfo();
+            }
+        }
+
+        public int TotalIterations
+        {
+            get => _totalIterations;
+            set
+            {
+                _totalIterations = value;
+                OnPropertyChanged();
+                UpdateIterationInfo();
+            }
+        }
+
+        private void UpdateIterationInfo()
+        {
+            if (TotalIterations > 0)
+            {
+                IterationInfo = $"Итерация {CurrentIteration} из {TotalIterations}";
+            }
+            else
+            {
+                IterationInfo = string.Empty;
+            }
+        }
+
         private async void ImportPhoneNumbers()
         {
             try
@@ -285,41 +332,82 @@ namespace VodafoneLogin.ViewModels
             try
             {
                 _logger.LogInfo("Starting phone scan...");
-                var unprocessedOffers = await _dataService.GetUnprocessedPhoneOffersAsync();
+                var configuration = _configViewModel.GetConfiguration();
                 
-                if (unprocessedOffers.Count == 0)
-                {
-                    _logger.LogInfo("No unprocessed phone offers found");
-                    System.Windows.MessageBox.Show(
-                        "Нет необработанных номеров для сканирования",
-                        "Нет данных",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Information);
-                    return;
-                }
+                // Calculate total iterations: 1 (default) + empty propositions repeats + error numbers repeats
+                int totalIterations = 1 + configuration.EmptyPropositionsRepeats + configuration.ErrorNumbersRepeats;
+                TotalIterations = totalIterations;
+                CurrentIteration = 0;
 
                 // Create cancellation token source
                 _cancellationTokenSource = new CancellationTokenSource();
                 IsScanning = true;
 
-                TotalNumbers = unprocessedOffers.Count;
                 ProcessedCount = 0;
                 OffersFoundCount = 0;
                 ServerErrors = 0;
 
-                var configuration = _configViewModel.GetConfiguration();
-
                 try
                 {
-                    foreach (var phoneOffer in unprocessedOffers)
+                    // Cycle 1: Default - process all unprocessed numbers
+                    CurrentIteration = 1;
+                    IterationInfo = $"Итерация {CurrentIteration} из {TotalIterations}: Обработка всех номеров";
+                    var unprocessedOffers = await _dataService.GetUnprocessedPhoneOffersAsync();
+                    
+                    if (unprocessedOffers.Count == 0 && configuration.EmptyPropositionsRepeats == 0 && configuration.ErrorNumbersRepeats == 0)
                     {
-                        // Check for cancellation
-                        _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+                        _logger.LogInfo("No unprocessed phone offers found");
+                        System.Windows.MessageBox.Show(
+                            "Нет необработанных номеров для сканирования",
+                            "Нет данных",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Information);
+                        return;
+                    }
 
-                        // Get current configuration (in case user changed it in config window)
-                        configuration = _configViewModel.GetConfiguration();
+                    TotalNumbers = unprocessedOffers.Count;
+                    await ProcessPhoneOffersListAsync(unprocessedOffers, configuration);
 
-                        await _phoneSearchService.ProcessPhoneOfferAsync(phoneOffer, configuration, this, _cancellationTokenSource.Token);
+                    // Cycle 2-N: Process empty propositions (if configured)
+                    if (configuration.EmptyPropositionsRepeats > 0)
+                    {
+                        for (int i = 1; i <= configuration.EmptyPropositionsRepeats; i++)
+                        {
+                            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+                            CurrentIteration = 1 + i;
+                            IterationInfo = $"Итерация {CurrentIteration} из {TotalIterations}: Обработка пустых предложений (цикл {i}/{configuration.EmptyPropositionsRepeats})";
+                            
+                            var emptyPropositions = await _dataService.GetEmptyPropositionsAsync();
+                            if (emptyPropositions.Count == 0)
+                            {
+                                _logger.LogInfo($"No empty propositions found for iteration {i}");
+                                break;
+                            }
+
+                            TotalNumbers = emptyPropositions.Count;
+                            await ProcessPhoneOffersListAsync(emptyPropositions, configuration, excludeOnSuccess: true);
+                        }
+                    }
+
+                    // Cycle N+1 to M: Process error numbers (if configured)
+                    if (configuration.ErrorNumbersRepeats > 0)
+                    {
+                        for (int i = 1; i <= configuration.ErrorNumbersRepeats; i++)
+                        {
+                            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+                            CurrentIteration = 1 + configuration.EmptyPropositionsRepeats + i;
+                            IterationInfo = $"Итерация {CurrentIteration} из {TotalIterations}: Обработка номеров с ошибками (цикл {i}/{configuration.ErrorNumbersRepeats})";
+                            
+                            var errorNumbers = await _dataService.GetErrorNumbersAsync();
+                            if (errorNumbers.Count == 0)
+                            {
+                                _logger.LogInfo($"No error numbers found for iteration {i}");
+                                break;
+                            }
+
+                            TotalNumbers = errorNumbers.Count;
+                            await ProcessPhoneOffersListAsync(errorNumbers, configuration, excludeOnSuccess: true);
+                        }
                     }
 
                     // Refresh PhoneOffersViewModel
@@ -329,6 +417,7 @@ namespace VodafoneLogin.ViewModels
                     }
 
                     _logger.LogInfo("Phone scan completed successfully");
+                    IterationInfo = string.Empty;
                     System.Windows.MessageBox.Show("Обработка завершена", "^_^", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                 }
                 catch (OperationCanceledException)
@@ -338,6 +427,7 @@ namespace VodafoneLogin.ViewModels
                     ProgressInput = 0;
                     ProgressSearch = 0;
                     ProgressNext = 0;
+                    IterationInfo = string.Empty;
 
                     // Refresh PhoneOffersViewModel
                     if (_phoneOffersViewModel != null)
@@ -366,6 +456,9 @@ namespace VodafoneLogin.ViewModels
                     ProgressInput = 0;
                     ProgressSearch = 0;
                     ProgressNext = 0;
+                    IterationInfo = string.Empty;
+                    CurrentIteration = 0;
+                    TotalIterations = 0;
                     
                     IsScanning = false;
                     _cancellationTokenSource?.Dispose();
@@ -544,6 +637,24 @@ namespace VodafoneLogin.ViewModels
         public void ReportServerErrors(int count)
         {
             ServerErrors += count;
+        }
+
+        private async Task ProcessPhoneOffersListAsync(List<PhoneOffer> offers, ProcessingConfiguration configuration, bool excludeOnSuccess = false)
+        {
+            foreach (var phoneOffer in offers)
+            {
+                // Check for cancellation
+                _cancellationTokenSource!.Token.ThrowIfCancellationRequested();
+
+                // Get current configuration (in case user changed it in config window)
+                var currentConfig = _configViewModel.GetConfiguration();
+
+                await _phoneSearchService.ProcessPhoneOfferAsync(phoneOffer, currentConfig, this, _cancellationTokenSource.Token);
+                
+                // Note: If excludeOnSuccess is true, numbers that get propositions will be automatically
+                // excluded from next iterations because GetEmptyPropositionsAsync and GetErrorNumbersAsync
+                // filter by DiscountPercent == 0 && GiftAmount == 0 (for empty) or IsError == true (for errors)
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

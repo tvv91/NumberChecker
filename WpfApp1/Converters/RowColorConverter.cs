@@ -31,7 +31,7 @@ namespace VodafoneLogin.Converters
                     return new SolidColorBrush(Color.FromRgb(224, 255, 224)); // Light green
 
                 // Processed, no propositions - Grey
-                return new SolidColorBrush(Color.FromRgb(240, 240, 240)); // Light grey
+                return new SolidColorBrush(Color.FromRgb(255, 255, 224)); // Yello
             }
 
             return Brushes.Transparent;

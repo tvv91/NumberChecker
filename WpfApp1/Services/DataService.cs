@@ -194,6 +194,28 @@ namespace VodafoneLogin.Services
                 .ToListAsync();
         }
 
+        public async Task<List<PhoneOffer>> GetEmptyPropositionsAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            
+            // Get processed offers with no discount and no gift, and no errors
+            return await context.PhoneOffers
+                .Where(p => p.IsProcessed && p.DiscountPercent == 0 && p.GiftAmount == 0 && !p.IsError)
+                .OrderBy(p => p.Id)
+                .ToListAsync();
+        }
+
+        public async Task<List<PhoneOffer>> GetErrorNumbersAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            
+            // Get offers with errors
+            return await context.PhoneOffers
+                .Where(p => p.IsError)
+                .OrderBy(p => p.Id)
+                .ToListAsync();
+        }
+
         public async Task MarkPhoneOfferAsProcessedAsync(int phoneOfferId)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
@@ -319,7 +341,7 @@ namespace VodafoneLogin.Services
             await context.SaveChangesAsync();
         }
 
-        public async Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null)
+        public async Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -330,20 +352,42 @@ namespace VodafoneLogin.Services
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
             }
 
-            if (hasDiscount.HasValue)
+            // If both filters are true, use OR logic (items with discount OR gift)
+            if (hasDiscount.HasValue && hasDiscount.Value && hasGift.HasValue && hasGift.Value)
             {
-                if (hasDiscount.Value)
-                    query = query.Where(p => p.DiscountPercent > 0);
-                else
-                    query = query.Where(p => p.DiscountPercent == 0);
+                query = query.Where(p => p.DiscountPercent > 0 || p.GiftAmount > 0);
+            }
+            else
+            {
+                // Otherwise, apply filters independently
+                if (hasDiscount.HasValue)
+                {
+                    if (hasDiscount.Value)
+                        query = query.Where(p => p.DiscountPercent > 0);
+                    else
+                        query = query.Where(p => p.DiscountPercent == 0);
+                }
+
+                if (hasGift.HasValue)
+                {
+                    if (hasGift.Value)
+                        query = query.Where(p => p.GiftAmount > 0);
+                    else
+                        query = query.Where(p => p.GiftAmount == 0);
+                }
             }
 
-            if (hasGift.HasValue)
+            // Filter for empty propositions (IsProcessed = true, but no discount and no gift)
+            if (isEmptyProposition.HasValue)
             {
-                if (hasGift.Value)
-                    query = query.Where(p => p.GiftAmount > 0);
+                if (isEmptyProposition.Value)
+                {
+                    query = query.Where(p => p.IsProcessed && p.DiscountPercent == 0 && p.GiftAmount == 0);
+                }
                 else
-                    query = query.Where(p => p.GiftAmount == 0);
+                {
+                    query = query.Where(p => !p.IsProcessed || p.DiscountPercent > 0 || p.GiftAmount > 0);
+                }
             }
 
             return await query
@@ -353,7 +397,7 @@ namespace VodafoneLogin.Services
                 .ToListAsync();
         }
 
-        public async Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null)
+        public async Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -364,20 +408,42 @@ namespace VodafoneLogin.Services
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
             }
 
-            if (hasDiscount.HasValue)
+            // If both filters are true, use OR logic (items with discount OR gift)
+            if (hasDiscount.HasValue && hasDiscount.Value && hasGift.HasValue && hasGift.Value)
             {
-                if (hasDiscount.Value)
-                    query = query.Where(p => p.DiscountPercent > 0);
-                else
-                    query = query.Where(p => p.DiscountPercent == 0);
+                query = query.Where(p => p.DiscountPercent > 0 || p.GiftAmount > 0);
+            }
+            else
+            {
+                // Otherwise, apply filters independently
+                if (hasDiscount.HasValue)
+                {
+                    if (hasDiscount.Value)
+                        query = query.Where(p => p.DiscountPercent > 0);
+                    else
+                        query = query.Where(p => p.DiscountPercent == 0);
+                }
+
+                if (hasGift.HasValue)
+                {
+                    if (hasGift.Value)
+                        query = query.Where(p => p.GiftAmount > 0);
+                    else
+                        query = query.Where(p => p.GiftAmount == 0);
+                }
             }
 
-            if (hasGift.HasValue)
+            // Filter for empty propositions (IsProcessed = true, but no discount and no gift)
+            if (isEmptyProposition.HasValue)
             {
-                if (hasGift.Value)
-                    query = query.Where(p => p.GiftAmount > 0);
+                if (isEmptyProposition.Value)
+                {
+                    query = query.Where(p => p.IsProcessed && p.DiscountPercent == 0 && p.GiftAmount == 0);
+                }
                 else
-                    query = query.Where(p => p.GiftAmount == 0);
+                {
+                    query = query.Where(p => !p.IsProcessed || p.DiscountPercent > 0 || p.GiftAmount > 0);
+                }
             }
 
             return await query.CountAsync();

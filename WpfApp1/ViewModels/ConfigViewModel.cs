@@ -12,6 +12,8 @@ namespace VodafoneLogin.ViewModels
         private double _delaySearchMax = 5;
         private double _delayNextMin = 3;
         private double _delayNextMax = 5;
+        private int _emptyPropositionsRepeats = 0;
+        private int _errorNumbersRepeats = 0;
 
         public double DelayInputMin
         {
@@ -73,6 +75,26 @@ namespace VodafoneLogin.ViewModels
             }
         }
 
+        public int EmptyPropositionsRepeats
+        {
+            get => _emptyPropositionsRepeats;
+            set
+            {
+                _emptyPropositionsRepeats = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int ErrorNumbersRepeats
+        {
+            get => _errorNumbersRepeats;
+            set
+            {
+                _errorNumbersRepeats = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ProcessingConfiguration GetConfiguration()
         {
             return new ProcessingConfiguration
@@ -82,7 +104,9 @@ namespace VodafoneLogin.ViewModels
                 DelaySearchMin = DelaySearchMin,
                 DelaySearchMax = DelaySearchMax,
                 DelayNextMin = DelayNextMin,
-                DelayNextMax = DelayNextMax
+                DelayNextMax = DelayNextMax,
+                EmptyPropositionsRepeats = EmptyPropositionsRepeats,
+                ErrorNumbersRepeats = ErrorNumbersRepeats
             };
         }
 
@@ -94,6 +118,8 @@ namespace VodafoneLogin.ViewModels
             DelaySearchMax = config.DelaySearchMax;
             DelayNextMin = config.DelayNextMin;
             DelayNextMax = config.DelayNextMax;
+            EmptyPropositionsRepeats = config.EmptyPropositionsRepeats;
+            ErrorNumbersRepeats = config.ErrorNumbersRepeats;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

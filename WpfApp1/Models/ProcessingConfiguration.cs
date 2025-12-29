@@ -8,6 +8,9 @@ namespace VodafoneLogin.Models
         public double DelaySearchMax { get; set; } = 5;
         public double DelayNextMin { get; set; } = 3;
         public double DelayNextMax { get; set; } = 5;
+        public int EmptyPropositionsRepeats { get; set; } = 0;
+        public int ErrorNumbersRepeats { get; set; } = 0;
     }
 }
+
 

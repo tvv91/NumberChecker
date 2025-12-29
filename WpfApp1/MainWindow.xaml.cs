@@ -1,9 +1,6 @@
 ﻿using Microsoft.Web.WebView2.Core;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using VodafoneLogin.ViewModels;
 using VodafoneLogin.Services;
 
@@ -14,6 +11,7 @@ namespace VodafoneLogin
         private readonly MainWindowViewModel _viewModel;
         private readonly PhoneOffersViewModel _phoneOffersViewModel;
         private readonly IWebViewService _webViewService;
+        private bool _isWebViewVisible = true;
 
         public MainWindow(MainWindowViewModel viewModel, PhoneOffersViewModel phoneOffersViewModel, IWebViewService webViewService)
         {
@@ -39,9 +37,6 @@ namespace VodafoneLogin
                     
                     // Subscribe to ShowAllFields changes to show/hide columns
                     _phoneOffersViewModel.PropertyChanged += PhoneOffersViewModel_PropertyChanged;
-                    
-                    // Set initial column visibility
-                    UpdateColumnVisibility();
                 }
                 
                 // Set initial WebView tab visibility
@@ -50,6 +45,12 @@ namespace VodafoneLogin
             
             // Set the WebView instance in the service
             _webViewService.WebView = webView;
+        }
+
+        public void ToggleWebViewVisibility()
+        {
+            _isWebViewVisible = !_isWebViewVisible;
+            UpdateWebViewTabVisibility();
         }
 
         private async void webView_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
@@ -68,48 +69,67 @@ namespace VodafoneLogin
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(MainWindowViewModel.IsAuthenticated))
-            {
-                UpdateWebViewTabVisibility();
-            }
+            // Authentication changes no longer affect WebView visibility
+            // WebView is controlled only by the toggle button
+        }
+
+        private void PhoneOffersDataGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Update column visibility when DataGrid is loaded
+            // Use Dispatcher to ensure columns are fully initialized
+            Dispatcher.BeginInvoke(new Action(() => UpdateColumnVisibility()), System.Windows.Threading.DispatcherPriority.Loaded);
         }
 
         private void PhoneOffersViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(PhoneOffersViewModel.ShowAllFields) && phoneOffersDataGrid != null)
             {
-                UpdateColumnVisibility();
+                // Use Dispatcher to ensure columns are fully initialized
+                Dispatcher.BeginInvoke(new Action(() => UpdateColumnVisibility()), System.Windows.Threading.DispatcherPriority.Loaded);
             }
         }
 
         private void UpdateWebViewTabVisibility()
         {
-            if (tabControl == null || webViewTab == null || _viewModel == null)
+            if (tabControl == null || webViewTab == null)
                 return;
 
-            // Remove or add the WebView tab based on authentication status
-            if (_viewModel.IsAuthenticated)
+            // Simply show or hide based on toggle state
+            if (_isWebViewVisible)
             {
-                // Hide WebView tab when authenticated
-                if (tabControl.Items.Contains(webViewTab))
-                {
-                    tabControl.Items.Remove(webViewTab);
-                }
-            }
-            else
-            {
-                // Show WebView tab when not authenticated
+                // Show WebView tab
                 if (!tabControl.Items.Contains(webViewTab))
                 {
                     // Insert at the beginning
                     tabControl.Items.Insert(0, webViewTab);
                 }
             }
+            else
+            {
+                // Hide WebView tab
+                if (tabControl.Items.Contains(webViewTab))
+                {
+                    tabControl.Items.Remove(webViewTab);
+                }
+            }
+        }
+
+        private void ToggleWebViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ToggleWebViewVisibility();
+            if (toggleWebViewButton != null)
+            {
+                toggleWebViewButton.Content = _isWebViewVisible ? "👁 Скрыть WebView" : "👁 Показать WebView";
+            }
         }
 
         private void UpdateColumnVisibility()
         {
             if (phoneOffersDataGrid == null || _phoneOffersViewModel == null)
+                return;
+
+            // Wait for columns to be initialized
+            if (phoneOffersDataGrid.Columns.Count == 0)
                 return;
 
             bool showAllFields = _phoneOffersViewModel.ShowAllFields;
@@ -128,12 +148,16 @@ namespace VodafoneLogin
                 { "Описание ошибки", 200.0 }
             };
 
-            foreach (var (header, originalWidth) in columnConfigs)
+            // Find and update all columns
+            foreach (var column in phoneOffersDataGrid.Columns)
             {
-                var column = phoneOffersDataGrid.Columns.FirstOrDefault(c => c.Header?.ToString() == header);
-
-                if (column != null)
+                var header = column.Header?.ToString();
+                
+                // Check if this column should be toggled
+                if (columnConfigs.ContainsKey(header))
                 {
+                    var originalWidth = columnConfigs[header];
+                    
                     if (showAllFields)
                     {
                         // Show column - restore original width

@@ -11,6 +11,7 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:ColumnWidthConverter x:Key="ColumnWidthConverter"/>
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         
         <!-- Modern Button Styles -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
@@ -167,6 +168,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 
                                 <TextBox Grid.Column="0" 
@@ -191,26 +193,31 @@
                                           Margin="5,0"/>
                                 
                                 <CheckBox Grid.Column="3" 
-                                          Content="Realtime" 
-                                          IsChecked="{Binding IsRealtime}"
+                                          Content="Пустые предложения" 
+                                          IsChecked="{Binding IsEmptyProposition, TargetNullValue=False}"
                                           Margin="5,0"/>
                                 
                                 <CheckBox Grid.Column="4" 
-                                          Content="Use colors" 
-                                          IsChecked="{Binding UseColors}"
+                                          Content="Реальное время" 
+                                          IsChecked="{Binding IsRealtime}"
                                           Margin="5,0"/>
                                 
                                 <CheckBox Grid.Column="5" 
-                                          Content="All fields" 
+                                          Content="Использовать цвета" 
+                                          IsChecked="{Binding UseColors}"
+                                          Margin="5,0"/>
+                                
+                                <CheckBox Grid.Column="6" 
+                                          Content="Все поля" 
                                           IsChecked="{Binding ShowAllFields}"
                                           Margin="5,0"/>
                                 
-                                <Button Grid.Column="6" 
+                                <Button Grid.Column="7" 
                                         Content="Применить" 
                                         Command="{Binding ApplyFilterCommand}"
                                         Margin="5,0" Padding="10,5"/>
                                 
-                                <Button Grid.Column="7" 
+                                <Button Grid.Column="8" 
                                         Content="Очистить" 
                                         Command="{Binding ClearFilterCommand}"
                                         Margin="5,0" Padding="10,5"/>
@@ -226,7 +233,8 @@
                               GridLinesVisibility="All"
                               HeadersVisibility="Column"
                               Margin="5"
-                              x:Name="phoneOffersDataGrid">
+                              x:Name="phoneOffersDataGrid"
+                              Loaded="PhoneOffersDataGrid_Loaded">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
                             <DataGridTextColumn Header="Номер телефона" Binding="{Binding PhoneNumber}" Width="150"/>
@@ -401,6 +409,12 @@
                                 Style="{StaticResource ModernButtonStyle}"
                                 Margin="0,0,8,0"/>
                         
+                        <Button x:Name="toggleWebViewButton" 
+                                Content="👁 Скрыть WebView" 
+                                Click="ToggleWebViewButton_Click"
+                                Style="{StaticResource ModernButtonStyle}"
+                                Margin="0,0,8,0"/>
+                        
                         <Separator Style="{StaticResource ModernSeparatorStyle}" Margin="8,0"/>
                         
                         <Button Content="Сбросить все" 
@@ -410,38 +424,52 @@
                 </StackPanel>
                 
                 <!-- Center: Statistics -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-                    <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center" Margin="10">
+                    <!-- Iteration Info -->
+                    <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0,5,5" 
+                            Visibility="{Binding IterationInfo, Converter={StaticResource StringToVisibilityConverter}}"
+                            Background="#E3F2FD" BorderBrush="#2196F3">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📊" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding TotalNumbers, StringFormat='Всего: {0}'}" 
-                                     FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="🔄" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding IterationInfo}" 
+                                     FontWeight="Bold" VerticalAlignment="Center" Foreground="#1976D2"/>
                         </StackPanel>
                     </Border>
                     
-                    <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="✓" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#28A745"/>
-                            <TextBlock Text="{Binding ProcessedCount, StringFormat='Обработано: {0}'}" 
-                                     FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🎁" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#17A2B8"/>
-                            <TextBlock Text="{Binding OffersFoundCount, StringFormat='Найдено: {0}'}" 
-                                     FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚠" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#DC3545"/>
-                            <TextBlock Text="{Binding ServerErrors, StringFormat='Ошибки: {0}'}" 
-                                     FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+                    <!-- Statistics Row -->
+                    <StackPanel Orientation="Horizontal">
+                        <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📊" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding TotalNumbers, StringFormat='Всего: {0}'}" 
+                                         FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✓" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#28A745"/>
+                                <TextBlock Text="{Binding ProcessedCount, StringFormat='Обработано: {0}'}" 
+                                         FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🎁" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#17A2B8"/>
+                                <TextBlock Text="{Binding OffersFoundCount, StringFormat='Найдено: {0}'}" 
+                                         FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚠" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#DC3545"/>
+                                <TextBlock Text="{Binding ServerErrors, StringFormat='Ошибки: {0}'}" 
+                                         FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
                 </StackPanel>
                 
                 <!-- Right: Current Number -->
