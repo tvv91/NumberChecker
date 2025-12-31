@@ -54,6 +54,18 @@ namespace VodafoneLogin.Services
                     await command.ExecuteNonQueryAsync();
                 }
                 
+                // Check if IterationCount column exists
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('PhoneOffers') WHERE name='IterationCount';";
+                result = await command.ExecuteScalarAsync();
+                count = Convert.ToInt32(result);
+                
+                if (count == 0)
+                {
+                    // IterationCount column doesn't exist, add it
+                    command.CommandText = "ALTER TABLE PhoneOffers ADD COLUMN IterationCount INTEGER NOT NULL DEFAULT 0;";
+                    await command.ExecuteNonQueryAsync();
+                }
+                
                 await connection.CloseAsync();
             }
             catch (Exception ex)
@@ -228,6 +240,18 @@ namespace VodafoneLogin.Services
             }
         }
 
+        public async Task IncrementIterationCountAsync(int phoneOfferId)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var offer = await context.PhoneOffers.FindAsync(phoneOfferId);
+            if (offer != null)
+            {
+                offer.IterationCount++;
+                offer.UpdatedAt = DateTime.UtcNow;
+                await context.SaveChangesAsync();
+            }
+        }
+
         public async Task SetPhoneOfferErrorAsync(int phoneOfferId, string error)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
@@ -299,6 +323,7 @@ namespace VodafoneLogin.Services
                 offer.SyncAttempts = 0;
                 offer.SyncError = null;
                 offer.IsProcessed = false;
+                offer.IterationCount = 0;
             }
             
             // Reset LastProcessedPhoneId using the same context

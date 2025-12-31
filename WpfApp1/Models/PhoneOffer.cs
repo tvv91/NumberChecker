@@ -30,6 +30,7 @@ namespace VodafoneLogin.Models
         public bool IsProcessed { get; set; } = false;             // обработан ли локально
         public bool IsError { get; set; } = false;                 // есть ли ошибка при обработке
         public string? ErrorDescription { get; set; }              // описание ошибки
+        public int IterationCount { get; set; } = 0;                // количество итераций обработки
     }
 }
 

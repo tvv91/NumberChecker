@@ -15,6 +15,7 @@ namespace VodafoneLogin.Services
         Task<List<PhoneOffer>> GetEmptyPropositionsAsync();
         Task<List<PhoneOffer>> GetErrorNumbersAsync();
         Task MarkPhoneOfferAsProcessedAsync(int phoneOfferId);
+        Task IncrementIterationCountAsync(int phoneOfferId);
         Task SetPhoneOfferErrorAsync(int phoneOfferId, string error);
         Task ClearPhoneOfferErrorAsync(int phoneOfferId);
         Task ResetScannedAsync();

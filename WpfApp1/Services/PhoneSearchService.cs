@@ -159,6 +159,9 @@ namespace VodafoneLogin.Services
         {
             progressReporter?.ReportCurrentNumber(phoneOffer.PhoneNumber);
 
+            // Increment iteration count at the start of processing
+            await _dataService.IncrementIterationCountAsync(phoneOffer.Id);
+
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();

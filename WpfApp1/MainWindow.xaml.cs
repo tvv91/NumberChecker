@@ -137,6 +137,7 @@ namespace VodafoneLogin
             // Define columns with their headers and original widths
             var columnConfigs = new Dictionary<string, double>
             {
+                { "Итераций", 70.0 },
                 { "Обновлено", 140.0 },
                 { "IsSynchronized", 100.0 },
                 { "SyncedAt", 140.0 },

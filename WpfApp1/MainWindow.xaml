@@ -244,6 +244,7 @@
                             <DataGridTextColumn Header="Дней действия" Binding="{Binding ActiveDays}" Width="100" CanUserSort="True" SortMemberPath="ActiveDays"/>
                             <DataGridTextColumn Header="Действует до" Binding="{Binding ValidUntil, StringFormat='{}{0:yyyy-MM-dd}'}" Width="120" CanUserSort="True" SortMemberPath="ValidUntil"/>
                             <DataGridTextColumn Header="Создано" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140"/>
+                            <DataGridTextColumn Header="Итераций" Binding="{Binding IterationCount}" Width="70" CanUserSort="True" SortMemberPath="IterationCount"/>
                             <DataGridTemplateColumn Header="Обновлено" Width="140" x:Name="colUpdatedAt">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
