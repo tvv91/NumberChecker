@@ -21,12 +21,6 @@ namespace VodafoneLogin.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;  // дата добавления
         public DateTime? UpdatedAt { get; set; }                    // дата последнего обновления
 
-        public bool IsSynchronized { get; set; } = false;          // синхронизировано ли
-        public DateTime? SyncedAt { get; set; }                     // когда синхронизировано
-        public DateTime? LastSyncAttempt { get; set; }             // дата последней попытки синхронизации
-        public int SyncAttempts { get; set; } = 0;                 // количество попыток синхронизации
-        public string? SyncError { get; set; }                     // текст ошибки последней синхронизации
-
         public bool IsProcessed { get; set; } = false;             // обработан ли локально
         public bool IsError { get; set; } = false;                 // есть ли ошибка при обработке
         public string? ErrorDescription { get; set; }              // описание ошибки

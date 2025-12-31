@@ -66,6 +66,11 @@ namespace VodafoneLogin.Services
                     await command.ExecuteNonQueryAsync();
                 }
                 
+                // Drop synchronization columns if they exist (SQLite doesn't support DROP COLUMN, so we'll ignore them)
+                // These columns will remain in the database but won't be used by the application
+                // To fully remove them, you would need to recreate the table, which is complex
+                // For now, we'll just ensure they're not referenced in code
+                
                 await connection.CloseAsync();
             }
             catch (Exception ex)
@@ -140,11 +145,6 @@ namespace VodafoneLogin.Services
                 ValidUntil = null,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = null,
-                IsSynchronized = false,
-                SyncedAt = null,
-                LastSyncAttempt = null,
-                SyncAttempts = 0,
-                SyncError = null,
                 IsProcessed = false
             };
             
@@ -260,9 +260,6 @@ namespace VodafoneLogin.Services
             {
                 offer.IsError = true;
                 offer.ErrorDescription = error;
-                offer.SyncError = error;
-                offer.LastSyncAttempt = DateTime.UtcNow;
-                offer.SyncAttempts++;
                 await context.SaveChangesAsync();
             }
         }
@@ -317,11 +314,6 @@ namespace VodafoneLogin.Services
                 offer.UpdatedAt = null;
                 offer.IsError = false;
                 offer.ErrorDescription = null;
-                offer.IsSynchronized = false;
-                offer.SyncedAt = null;
-                offer.LastSyncAttempt = null;
-                offer.SyncAttempts = 0;
-                offer.SyncError = null;
                 offer.IsProcessed = false;
                 offer.IterationCount = 0;
             }

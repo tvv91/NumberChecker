@@ -139,11 +139,6 @@ namespace VodafoneLogin
             {
                 { "Итераций", 70.0 },
                 { "Обновлено", 140.0 },
-                { "IsSynchronized", 100.0 },
-                { "SyncedAt", 140.0 },
-                { "LastSyncAttempt", 140.0 },
-                { "SyncAttempts", 100.0 },
-                { "SyncError", 200.0 },
                 { "IsProcessed", 100.0 },
                 { "Ошибка", 60.0 },
                 { "Описание ошибки", 200.0 }
