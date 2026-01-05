@@ -17,6 +17,8 @@ namespace VodafoneLogin.ViewModels
         private bool? _hasGift;
         private bool? _isEmptyProposition;
         private bool? _hasError;
+        private bool? _isPropositionsNotFound;
+        private bool? _isPropositionsNotSuitable;
         private int _currentPage = 1;
         private int _pageSize = 50;
         private int _totalCount;
@@ -40,8 +42,9 @@ namespace VodafoneLogin.ViewModels
                 PhoneFilter = string.Empty; 
                 HasDiscount = null; 
                 HasGift = null; 
-                IsEmptyProposition = null; 
                 HasError = null; 
+                IsPropositionsNotFound = null; 
+                IsPropositionsNotSuitable = null; 
                 CurrentPage = 1; 
                 await LoadDataAsync(); 
             });
@@ -103,6 +106,26 @@ namespace VodafoneLogin.ViewModels
             set
             {
                 _hasError = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool? IsPropositionsNotFound
+        {
+            get => _isPropositionsNotFound;
+            set
+            {
+                _isPropositionsNotFound = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool? IsPropositionsNotSuitable
+        {
+            get => _isPropositionsNotSuitable;
+            set
+            {
+                _isPropositionsNotSuitable = value;
                 OnPropertyChanged();
             }
         }
@@ -204,14 +227,14 @@ namespace VodafoneLogin.ViewModels
 
         public async Task LoadDataAsync()
         {
-            TotalCount = await _dataService.GetPhoneOffersCountAsync(PhoneFilter, HasDiscount, HasGift, IsEmptyProposition, HasError);
+            TotalCount = await _dataService.GetPhoneOffersCountAsync(PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable);
             TotalPages = (int)Math.Ceiling(TotalCount / (double)PageSize);
 
             if (CurrentPage > TotalPages && TotalPages > 0)
                 CurrentPage = TotalPages;
 
             var skip = (CurrentPage - 1) * PageSize;
-            var offers = await _dataService.GetPhoneOffersAsync(skip, PageSize, PhoneFilter, HasDiscount, HasGift, IsEmptyProposition, HasError);
+            var offers = await _dataService.GetPhoneOffersAsync(skip, PageSize, PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable);
             
             PhoneOffers.Clear();
             foreach (var offer in offers)

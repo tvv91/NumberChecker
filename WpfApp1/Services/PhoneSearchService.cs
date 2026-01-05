@@ -30,7 +30,7 @@ namespace VodafoneLogin.Services
                 await InputPhoneNumberAsync(phoneNumber, configuration, progressReporter);
                 await ClickSearchButtonAsync(configuration, progressReporter);
                 
-                var (hasError, offer) = await ProcessSearchResultsAsync(phoneNumber, progressReporter);
+                var (hasError, offer, isPropositionsNotFound, isPropositionsNotSuitable) = await ProcessSearchResultsAsync(phoneNumber, progressReporter);
 
                 if (hasError)
                 {
@@ -40,7 +40,20 @@ namespace VodafoneLogin.Services
 
                 if (offer != null)
                 {
-                    await SaveOfferResultAsync(phoneNumber, offer, progressReporter);
+                    await SaveOfferResultAsync(phoneNumber, offer, progressReporter, isPropositionsNotFound, isPropositionsNotSuitable);
+                }
+                else
+                {
+                    // No offer found, but we still need to save the proposition status
+                    var emptyOffer = new Offer
+                    {
+                        Discount = 0,
+                        MinTopUp = 0,
+                        Gift = 0,
+                        ActiveDays = 0,
+                        ValidUntil = null
+                    };
+                    await SaveOfferResultAsync(phoneNumber, emptyOffer, progressReporter, isPropositionsNotFound, isPropositionsNotSuitable);
                 }
 
                 await SaveProgressAsync(index, progressReporter);
@@ -101,7 +114,7 @@ namespace VodafoneLogin.Services
             ");
         }
 
-        private async Task<(bool hasError, Offer? offer)> ProcessSearchResultsAsync(
+        private async Task<(bool hasError, Offer? offer, bool isPropositionsNotFound, bool isPropositionsNotSuitable)> ProcessSearchResultsAsync(
             string phoneNumber,
             IProgressReporter? progressReporter,
             CancellationToken cancellationToken = default)
@@ -110,14 +123,41 @@ namespace VodafoneLogin.Services
 
             if (await _webViewService.CheckServerErrorToastAsync())
             {
-                return (true, null);
+                return (true, null, false, false);
             }
 
             string rawOffersJson = await _webViewService.GetOffersJsonAsync();
-            string offersJson = JsonSerializer.Deserialize<string>(rawOffersJson) ?? "[]";
+            // rawOffersJson is already a JSON string, need to deserialize it first
+            string offersJson = JsonSerializer.Deserialize<string>(rawOffersJson) ?? "{}";
             
-            var offerDtos = JsonSerializer.Deserialize<List<OfferDto>>(offersJson);
-            var offers = offerDtos?.Select(dto => dto.ToOffer()).ToList();
+            // Try to deserialize as new format first (with OffersResponseDto)
+            OffersResponseDto? responseDto = null;
+            try
+            {
+                responseDto = JsonSerializer.Deserialize<OffersResponseDto>(offersJson);
+            }
+            catch
+            {
+                // Fallback to old format for backward compatibility
+            }
+
+            bool isPropositionsNotFound = false;
+            List<Offer>? offers = null;
+
+            if (responseDto != null)
+            {
+                // New format
+                isPropositionsNotFound = responseDto.IsPropositionsNotFound;
+                offers = responseDto.Offers?.Select(dto => dto.ToOffer()).ToList();
+            }
+            else
+            {
+                // Old format - try to deserialize as array
+                var offerDtos = JsonSerializer.Deserialize<List<OfferDto>>(offersJson);
+                offers = offerDtos?.Select(dto => dto.ToOffer()).ToList();
+            }
+
+            bool isPropositionsNotSuitable = false;
 
             if (offers != null && offers.Count > 0)
             {
@@ -134,20 +174,44 @@ namespace VodafoneLogin.Services
                 {
                     progressReporter?.ReportOffersFound(1);
                 }
+                else
+                {
+                    // If we have offers but no valid offer, and "not found" was not detected,
+                    // it means propositions are not suitable
+                    if (!isPropositionsNotFound)
+                    {
+                        isPropositionsNotSuitable = true;
+                    }
+                }
                 
-                return (false, offer);
+                return (false, offer, isPropositionsNotFound, isPropositionsNotSuitable);
             }
-
-            return (false, null);
+            else
+            {
+                // No offers found
+                if (isPropositionsNotFound)
+                {
+                    // Explicitly "not found"
+                    return (false, null, true, false);
+                }
+                else
+                {
+                    // No offers and no "not found" message - means not suitable
+                    isPropositionsNotSuitable = true;
+                    return (false, null, false, true);
+                }
+            }
         }
 
         private async Task SaveOfferResultAsync(
             string phoneNumber,
             Offer offer,
-            IProgressReporter? progressReporter)
+            IProgressReporter? progressReporter,
+            bool isPropositionsNotFound = false,
+            bool isPropositionsNotSuitable = false)
         {
             // ReportOffersFound is now called in ProcessSearchResultsAsync when offers are found
-            int offerId = await _dataService.SavePhoneOfferAsync(phoneNumber, offer);
+            int offerId = await _dataService.SavePhoneOfferAsync(phoneNumber, offer, isPropositionsNotFound, isPropositionsNotSuitable);
             await _dataService.SetLastProcessedPhoneIdAsync(offerId);
         }
 
@@ -171,7 +235,7 @@ namespace VodafoneLogin.Services
                 await ClickSearchButtonAsync(configuration, progressReporter, cancellationToken);
                 
                 cancellationToken.ThrowIfCancellationRequested();
-                var (hasError, offer) = await ProcessSearchResultsAsync(phoneOffer.PhoneNumber, progressReporter, cancellationToken);
+                var (hasError, offer, isPropositionsNotFound, isPropositionsNotSuitable) = await ProcessSearchResultsAsync(phoneOffer.PhoneNumber, progressReporter, cancellationToken);
 
                 if (hasError)
                 {
@@ -183,7 +247,20 @@ namespace VodafoneLogin.Services
                 {
                     // Save the offer data (this will update the existing PhoneOffer)
                     // ReportOffersFound is now called in ProcessSearchResultsAsync when offers are found
-                    await _dataService.SavePhoneOfferAsync(phoneOffer.PhoneNumber, offer);
+                    await _dataService.SavePhoneOfferAsync(phoneOffer.PhoneNumber, offer, isPropositionsNotFound, isPropositionsNotSuitable);
+                }
+                else
+                {
+                    // No offer found, but we still need to save the proposition status
+                    var emptyOffer = new Offer
+                    {
+                        Discount = 0,
+                        MinTopUp = 0,
+                        Gift = 0,
+                        ActiveDays = 0,
+                        ValidUntil = null
+                    };
+                    await _dataService.SavePhoneOfferAsync(phoneOffer.PhoneNumber, emptyOffer, isPropositionsNotFound, isPropositionsNotSuitable);
                 }
 
                 // Clear error if it was set previously (successful processing)

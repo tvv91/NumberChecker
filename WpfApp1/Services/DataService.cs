@@ -66,6 +66,30 @@ namespace VodafoneLogin.Services
                     await command.ExecuteNonQueryAsync();
                 }
                 
+                // Check if IsPropositionsNotFound column exists
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('PhoneOffers') WHERE name='IsPropositionsNotFound';";
+                result = await command.ExecuteScalarAsync();
+                count = Convert.ToInt32(result);
+                
+                if (count == 0)
+                {
+                    // IsPropositionsNotFound column doesn't exist, add it
+                    command.CommandText = "ALTER TABLE PhoneOffers ADD COLUMN IsPropositionsNotFound INTEGER NOT NULL DEFAULT 0;";
+                    await command.ExecuteNonQueryAsync();
+                }
+                
+                // Check if IsPropositionsNotSuitable column exists
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('PhoneOffers') WHERE name='IsPropositionsNotSuitable';";
+                result = await command.ExecuteScalarAsync();
+                count = Convert.ToInt32(result);
+                
+                if (count == 0)
+                {
+                    // IsPropositionsNotSuitable column doesn't exist, add it
+                    command.CommandText = "ALTER TABLE PhoneOffers ADD COLUMN IsPropositionsNotSuitable INTEGER NOT NULL DEFAULT 0;";
+                    await command.ExecuteNonQueryAsync();
+                }
+                
                 // Drop synchronization columns if they exist (SQLite doesn't support DROP COLUMN, so we'll ignore them)
                 // These columns will remain in the database but won't be used by the application
                 // To fully remove them, you would need to recreate the table, which is complex
@@ -81,7 +105,7 @@ namespace VodafoneLogin.Services
         }
 
 
-        public async Task<int> SavePhoneOfferAsync(string phoneNumber, Offer offer)
+        public async Task<int> SavePhoneOfferAsync(string phoneNumber, Offer offer, bool isPropositionsNotFound = false, bool isPropositionsNotSuitable = false)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -96,6 +120,8 @@ namespace VodafoneLogin.Services
                 existingOffer.GiftAmount = offer.Gift;
                 existingOffer.ActiveDays = offer.ActiveDays;
                 existingOffer.ValidUntil = offer.ValidUntil;
+                existingOffer.IsPropositionsNotFound = isPropositionsNotFound;
+                existingOffer.IsPropositionsNotSuitable = isPropositionsNotSuitable;
                 existingOffer.UpdatedAt = DateTime.UtcNow;
                 await context.SaveChangesAsync();
                 return existingOffer.Id;
@@ -111,6 +137,8 @@ namespace VodafoneLogin.Services
                     GiftAmount = offer.Gift,
                     ActiveDays = offer.ActiveDays,
                     ValidUntil = offer.ValidUntil,
+                    IsPropositionsNotFound = isPropositionsNotFound,
+                    IsPropositionsNotSuitable = isPropositionsNotSuitable,
                     CreatedAt = DateTime.UtcNow
                 };
                 
@@ -211,8 +239,13 @@ namespace VodafoneLogin.Services
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
             // Get processed offers with no discount and no gift, and no errors
+            // This includes both "not found" and "not suitable" propositions
             return await context.PhoneOffers
-                .Where(p => p.IsProcessed && p.DiscountPercent == 0 && p.GiftAmount == 0 && !p.IsError)
+                .Where(p => p.IsProcessed && 
+                           p.DiscountPercent == 0 && 
+                           p.GiftAmount == 0 && 
+                           !p.IsError &&
+                           (p.IsPropositionsNotFound || p.IsPropositionsNotSuitable))
                 .OrderBy(p => p.Id)
                 .ToListAsync();
         }
@@ -316,6 +349,8 @@ namespace VodafoneLogin.Services
                 offer.ErrorDescription = null;
                 offer.IsProcessed = false;
                 offer.IterationCount = 0;
+                offer.IsPropositionsNotFound = false;
+                offer.IsPropositionsNotSuitable = false;
             }
             
             // Reset LastProcessedPhoneId using the same context
@@ -358,7 +393,7 @@ namespace VodafoneLogin.Services
             await context.SaveChangesAsync();
         }
 
-        public async Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null)
+        public async Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -417,6 +452,41 @@ namespace VodafoneLogin.Services
                 else
                 {
                     query = query.Where(p => !p.IsError);
+                }
+            }
+
+            // Filter for propositions not found and not suitable - use OR logic when both are selected
+            if (isPropositionsNotFound.HasValue && isPropositionsNotFound.Value && 
+                isPropositionsNotSuitable.HasValue && isPropositionsNotSuitable.Value)
+            {
+                // Both selected - use OR logic (items with either condition)
+                query = query.Where(p => p.IsPropositionsNotFound || p.IsPropositionsNotSuitable);
+            }
+            else
+            {
+                // Apply filters independently
+                if (isPropositionsNotFound.HasValue)
+                {
+                    if (isPropositionsNotFound.Value)
+                    {
+                        query = query.Where(p => p.IsPropositionsNotFound);
+                    }
+                    else
+                    {
+                        query = query.Where(p => !p.IsPropositionsNotFound);
+                    }
+                }
+
+                if (isPropositionsNotSuitable.HasValue)
+                {
+                    if (isPropositionsNotSuitable.Value)
+                    {
+                        query = query.Where(p => p.IsPropositionsNotSuitable);
+                    }
+                    else
+                    {
+                        query = query.Where(p => !p.IsPropositionsNotSuitable);
+                    }
                 }
             }
 
@@ -427,7 +497,7 @@ namespace VodafoneLogin.Services
                 .ToListAsync();
         }
 
-        public async Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null)
+        public async Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -486,6 +556,41 @@ namespace VodafoneLogin.Services
                 else
                 {
                     query = query.Where(p => !p.IsError);
+                }
+            }
+
+            // Filter for propositions not found and not suitable - use OR logic when both are selected
+            if (isPropositionsNotFound.HasValue && isPropositionsNotFound.Value && 
+                isPropositionsNotSuitable.HasValue && isPropositionsNotSuitable.Value)
+            {
+                // Both selected - use OR logic (items with either condition)
+                query = query.Where(p => p.IsPropositionsNotFound || p.IsPropositionsNotSuitable);
+            }
+            else
+            {
+                // Apply filters independently
+                if (isPropositionsNotFound.HasValue)
+                {
+                    if (isPropositionsNotFound.Value)
+                    {
+                        query = query.Where(p => p.IsPropositionsNotFound);
+                    }
+                    else
+                    {
+                        query = query.Where(p => !p.IsPropositionsNotFound);
+                    }
+                }
+
+                if (isPropositionsNotSuitable.HasValue)
+                {
+                    if (isPropositionsNotSuitable.Value)
+                    {
+                        query = query.Where(p => p.IsPropositionsNotSuitable);
+                    }
+                    else
+                    {
+                        query = query.Where(p => !p.IsPropositionsNotSuitable);
+                    }
                 }
             }
 

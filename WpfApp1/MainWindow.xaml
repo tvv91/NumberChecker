@@ -185,6 +185,7 @@
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
@@ -201,21 +202,26 @@
                                                   Margin="5,0,5,0"/>
                                         
                                         <CheckBox Grid.Column="2" 
-                                                  Content="Пустые предложения" 
-                                                  IsChecked="{Binding IsEmptyProposition, TargetNullValue=False}"
-                                                  Margin="5,0,5,0"/>
-                                        
-                                        <CheckBox Grid.Column="3" 
                                                   Content="С ошибками" 
                                                   IsChecked="{Binding HasError, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
-                                        <Button Grid.Column="5" 
+                                        <CheckBox Grid.Column="3" 
+                                                  Content="Нет предложений" 
+                                                  IsChecked="{Binding IsPropositionsNotFound, TargetNullValue=False}"
+                                                  Margin="5,0,5,0"/>
+                                        
+                                        <CheckBox Grid.Column="4" 
+                                                  Content="Нет подходящих" 
+                                                  IsChecked="{Binding IsPropositionsNotSuitable, TargetNullValue=False}"
+                                                  Margin="5,0,5,0"/>
+                                        
+                                        <Button Grid.Column="6" 
                                                 Content="Применить" 
                                                 Command="{Binding ApplyFilterCommand}"
                                                 Margin="5,0,5,0" Padding="10,5"/>
                                         
-                                        <Button Grid.Column="6" 
+                                        <Button Grid.Column="7" 
                                                 Content="Очистить" 
                                                 Command="{Binding ClearFilterCommand}"
                                                 Margin="5,0" Padding="10,5"/>

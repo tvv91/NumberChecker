@@ -134,6 +134,10 @@ namespace VodafoneLogin.Services
 
             return await WebView.CoreWebView2.ExecuteScriptAsync(@"
         (function () {
+            // Check for ""Пропозицій не знайдено"" message
+            const notFoundElements = [...document.querySelectorAll('h6.text-center')];
+            const isPropositionsNotFound = notFoundElements.some(h => h.innerText.includes('Пропозицій не знайдено'));
+
             const panels = [...document.querySelectorAll('mat-expansion-panel')];
             const offers = [];
 
@@ -167,7 +171,10 @@ namespace VodafoneLogin.Services
                     });
             }
 
-            return JSON.stringify(offers);
+            return JSON.stringify({
+                Offers: offers,
+                IsPropositionsNotFound: isPropositionsNotFound
+            });
         })();
     ");
         }

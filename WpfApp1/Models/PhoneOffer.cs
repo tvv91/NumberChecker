@@ -25,6 +25,8 @@ namespace VodafoneLogin.Models
         public bool IsError { get; set; } = false;                 // есть ли ошибка при обработке
         public string? ErrorDescription { get; set; }              // описание ошибки
         public int IterationCount { get; set; } = 0;                // количество итераций обработки
+        public bool IsPropositionsNotFound { get; set; } = false;  // пропозиций не найдено (текст "Пропозицій не знайдено" найден)
+        public bool IsPropositionsNotSuitable { get; set; } = false; // пропозиции не подходят (нет "Пропозицій не знайдено", но нет процента/подарка)
     }
 }
 
