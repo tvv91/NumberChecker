@@ -358,7 +358,7 @@ namespace VodafoneLogin.Services
             await context.SaveChangesAsync();
         }
 
-        public async Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null)
+        public async Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -404,6 +404,19 @@ namespace VodafoneLogin.Services
                 else
                 {
                     query = query.Where(p => !p.IsProcessed || p.DiscountPercent > 0 || p.GiftAmount > 0);
+                }
+            }
+
+            // Filter for error numbers
+            if (hasError.HasValue)
+            {
+                if (hasError.Value)
+                {
+                    query = query.Where(p => p.IsError);
+                }
+                else
+                {
+                    query = query.Where(p => !p.IsError);
                 }
             }
 
@@ -414,7 +427,7 @@ namespace VodafoneLogin.Services
                 .ToListAsync();
         }
 
-        public async Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null)
+        public async Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -460,6 +473,19 @@ namespace VodafoneLogin.Services
                 else
                 {
                     query = query.Where(p => !p.IsProcessed || p.DiscountPercent > 0 || p.GiftAmount > 0);
+                }
+            }
+
+            // Filter for error numbers
+            if (hasError.HasValue)
+            {
+                if (hasError.Value)
+                {
+                    query = query.Where(p => p.IsError);
+                }
+                else
+                {
+                    query = query.Where(p => !p.IsError);
                 }
             }
 

@@ -16,6 +16,7 @@ namespace VodafoneLogin.ViewModels
         private bool? _hasDiscount;
         private bool? _hasGift;
         private bool? _isEmptyProposition;
+        private bool? _hasError;
         private int _currentPage = 1;
         private int _pageSize = 50;
         private int _totalCount;
@@ -40,6 +41,7 @@ namespace VodafoneLogin.ViewModels
                 HasDiscount = null; 
                 HasGift = null; 
                 IsEmptyProposition = null; 
+                HasError = null; 
                 CurrentPage = 1; 
                 await LoadDataAsync(); 
             });
@@ -91,6 +93,16 @@ namespace VodafoneLogin.ViewModels
             set
             {
                 _isEmptyProposition = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool? HasError
+        {
+            get => _hasError;
+            set
+            {
+                _hasError = value;
                 OnPropertyChanged();
             }
         }
@@ -192,14 +204,14 @@ namespace VodafoneLogin.ViewModels
 
         public async Task LoadDataAsync()
         {
-            TotalCount = await _dataService.GetPhoneOffersCountAsync(PhoneFilter, HasDiscount, HasGift, IsEmptyProposition);
+            TotalCount = await _dataService.GetPhoneOffersCountAsync(PhoneFilter, HasDiscount, HasGift, IsEmptyProposition, HasError);
             TotalPages = (int)Math.Ceiling(TotalCount / (double)PageSize);
 
             if (CurrentPage > TotalPages && TotalPages > 0)
                 CurrentPage = TotalPages;
 
             var skip = (CurrentPage - 1) * PageSize;
-            var offers = await _dataService.GetPhoneOffersAsync(skip, PageSize, PhoneFilter, HasDiscount, HasGift, IsEmptyProposition);
+            var offers = await _dataService.GetPhoneOffersAsync(skip, PageSize, PhoneFilter, HasDiscount, HasGift, IsEmptyProposition, HasError);
             
             PhoneOffers.Clear();
             foreach (var offer in offers)

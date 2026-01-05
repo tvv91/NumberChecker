@@ -160,73 +160,85 @@
                     
                     <!-- Filters -->
                     <Border Grid.Row="0" Background="#F0F0F0" Padding="12" Margin="5">
-                        <StackPanel>
-                            <TextBlock Text="Фильтры" FontWeight="Bold" FontSize="13" Margin="0,0,0,6"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <TextBox Grid.Column="0" 
-                                         Text="{Binding PhoneFilter, UpdateSourceTrigger=PropertyChanged}" 
-                                         Margin="0,0,10,0"
-                                         Padding="5">
-                                    <TextBox.Style>
-                                        <Style TargetType="TextBox">
-                                            <Setter Property="Tag" Value="Поиск по номеру..."/>
-                                        </Style>
-                                    </TextBox.Style>
-                                </TextBox>
-                                
-                                <CheckBox Grid.Column="1" 
-                                          Content="Со скидкой" 
-                                          IsChecked="{Binding HasDiscount, TargetNullValue=False}"
-                                          Margin="5,0"/>
-                                
-                                <CheckBox Grid.Column="2" 
-                                          Content="С подарком" 
-                                          IsChecked="{Binding HasGift, TargetNullValue=False}"
-                                          Margin="5,0"/>
-                                
-                                <CheckBox Grid.Column="3" 
-                                          Content="Пустые предложения" 
-                                          IsChecked="{Binding IsEmptyProposition, TargetNullValue=False}"
-                                          Margin="5,0"/>
-                                
-                                <CheckBox Grid.Column="4" 
-                                          Content="Реальное время" 
-                                          IsChecked="{Binding IsRealtime}"
-                                          Margin="5,0"/>
-                                
-                                <CheckBox Grid.Column="5" 
-                                          Content="Использовать цвета" 
-                                          IsChecked="{Binding UseColors}"
-                                          Margin="5,0"/>
-                                
-                                <CheckBox Grid.Column="6" 
-                                          Content="Все поля" 
-                                          IsChecked="{Binding ShowAllFields}"
-                                          Margin="5,0"/>
-                                
-                                <Button Grid.Column="7" 
-                                        Content="Применить" 
-                                        Command="{Binding ApplyFilterCommand}"
-                                        Margin="5,0" Padding="10,5"/>
-                                
-                                <Button Grid.Column="8" 
-                                        Content="Очистить" 
-                                        Command="{Binding ClearFilterCommand}"
-                                        Margin="5,0" Padding="10,5"/>
-                            </Grid>
-                        </StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Фильтрация Group -->
+                            <GroupBox Grid.Column="0" Header="Фильтрация" Margin="0,0,5,0" Padding="10">
+                                <StackPanel>
+                                    <TextBox Text="{Binding PhoneFilter, UpdateSourceTrigger=PropertyChanged}" 
+                                             Margin="0,0,0,8"
+                                             Padding="5">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="Tag" Value="Поиск по номеру..."/>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                    
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <CheckBox Grid.Column="0" 
+                                                  Content="Со скидкой" 
+                                                  IsChecked="{Binding HasDiscount, TargetNullValue=False}"
+                                                  Margin="0,0,5,0"/>
+                                        
+                                        <CheckBox Grid.Column="1" 
+                                                  Content="С подарком" 
+                                                  IsChecked="{Binding HasGift, TargetNullValue=False}"
+                                                  Margin="5,0,5,0"/>
+                                        
+                                        <CheckBox Grid.Column="2" 
+                                                  Content="Пустые предложения" 
+                                                  IsChecked="{Binding IsEmptyProposition, TargetNullValue=False}"
+                                                  Margin="5,0,5,0"/>
+                                        
+                                        <CheckBox Grid.Column="3" 
+                                                  Content="С ошибками" 
+                                                  IsChecked="{Binding HasError, TargetNullValue=False}"
+                                                  Margin="5,0,5,0"/>
+                                        
+                                        <Button Grid.Column="5" 
+                                                Content="Применить" 
+                                                Command="{Binding ApplyFilterCommand}"
+                                                Margin="5,0,5,0" Padding="10,5"/>
+                                        
+                                        <Button Grid.Column="6" 
+                                                Content="Очистить" 
+                                                Command="{Binding ClearFilterCommand}"
+                                                Margin="5,0" Padding="10,5"/>
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+                            
+                            <!-- Параметры отображения Group -->
+                            <GroupBox Grid.Column="1" Header="Параметры отображения" Margin="5,0" Padding="10">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox Content="Реальное время" 
+                                              IsChecked="{Binding IsRealtime}"
+                                              Margin="0,0,10,0"/>
+                                    
+                                    <CheckBox Content="Использовать цвета" 
+                                              IsChecked="{Binding UseColors}"
+                                              Margin="0,0,10,0"/>
+                                    
+                                    <CheckBox Content="Все поля" 
+                                              IsChecked="{Binding ShowAllFields}"/>
+                                </StackPanel>
+                            </GroupBox>
+                        </Grid>
                     </Border>
                     
                     <!-- DataGrid -->
