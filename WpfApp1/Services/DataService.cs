@@ -238,14 +238,13 @@ namespace VodafoneLogin.Services
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
-            // Get processed offers with no discount and no gift, and no errors
-            // This includes both "not found" and "not suitable" propositions
+            // Get processed offers where propositions were not found (IsPropositionsNotFound = 1)
             return await context.PhoneOffers
                 .Where(p => p.IsProcessed && 
                            p.DiscountPercent == 0 && 
                            p.GiftAmount == 0 && 
                            !p.IsError &&
-                           (p.IsPropositionsNotFound || p.IsPropositionsNotSuitable))
+                           p.IsPropositionsNotFound)
                 .OrderBy(p => p.Id)
                 .ToListAsync();
         }

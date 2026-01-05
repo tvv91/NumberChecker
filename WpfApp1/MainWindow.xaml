@@ -207,12 +207,12 @@
                                                   Margin="5,0,5,0"/>
                                         
                                         <CheckBox Grid.Column="3" 
-                                                  Content="Нет предложений" 
+                                                  Content="Предложений не найдено" 
                                                   IsChecked="{Binding IsPropositionsNotFound, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
                                         <CheckBox Grid.Column="4" 
-                                                  Content="Нет подходящих" 
+                                                  Content="Предложения не подходят" 
                                                   IsChecked="{Binding IsPropositionsNotSuitable, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
@@ -285,6 +285,8 @@
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Ошибка" Binding="{Binding IsError}" Width="60"/>
                             <DataGridTextColumn Header="Описание ошибки" Binding="{Binding ErrorDescription}" Width="200"/>
+                            <DataGridTextColumn Header="Предложений не найдено" Binding="{Binding IsPropositionsNotFound}" Width="150" x:Name="colIsPropositionsNotFound"/>
+                            <DataGridTextColumn Header="Предложения не подходят" Binding="{Binding IsPropositionsNotSuitable}" Width="150" x:Name="colIsPropositionsNotSuitable"/>
                         </DataGrid.Columns>
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">

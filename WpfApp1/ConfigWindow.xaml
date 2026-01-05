@@ -65,7 +65,7 @@
                 <Slider Minimum="0" Maximum="10" Value="{Binding EmptyPropositionsRepeats, Mode=TwoWay}" TickFrequency="1" IsSnapToTickEnabled="True" Height="20"/>
                 <TextBlock Text="{Binding EmptyPropositionsRepeats, StringFormat='{}{0}'}" HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="11"/>
                 <TextBlock Text="Повторы для пустых предложений" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,6,0,3" FontSize="12"/>
-                <TextBlock Text="Для номеров без предложений" HorizontalAlignment="Center" FontSize="10" Opacity="0.7" Margin="0,0,0,0" TextWrapping="Wrap"/>
+                <TextBlock Text="Для номеров где предложений не найдено" HorizontalAlignment="Center" FontSize="10" Opacity="0.7" Margin="0,0,0,0" TextWrapping="Wrap"/>
             </StackPanel>
 
             <!-- Error Numbers Repeats -->
