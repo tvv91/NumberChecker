@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace VodafoneLogin.Models
+namespace VodafoneNumberChecker.Models
 {
     public class SyncState
     {

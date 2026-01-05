@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace VodafoneLogin.Converters
+namespace VodafoneNumberChecker.Converters
 {
     public class StringToVisibilityConverter : IValueConverter
     {

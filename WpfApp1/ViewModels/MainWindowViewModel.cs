@@ -2,10 +2,10 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Threading;
-using VodafoneLogin.Models;
-using VodafoneLogin.Services;
+using VodafoneNumberChecker.Models;
+using VodafoneNumberChecker.Services;
 
-namespace VodafoneLogin.ViewModels
+namespace VodafoneNumberChecker.ViewModels
 {
     public class MainWindowViewModel : INotifyPropertyChanged, IProgressReporter
     {
@@ -237,23 +237,89 @@ namespace VodafoneLogin.ViewModels
                         _logger.LogInfo($"Starting import from file: {dialog.FileName}");
                         _phoneNumbers = _fileService.ReadPhoneNumbers(dialog.FileName);
                         
-                        // Import phone numbers to database with default states
-                        int importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers);
-                        TotalNumbers = _phoneNumbers.Count;
-                        
-                        // Refresh PhoneOffersViewModel to show newly imported numbers
-                        if (_phoneOffersViewModel != null)
+                        if (_phoneNumbers.Count == 0)
                         {
-                            await _phoneOffersViewModel.LoadDataAsync();
+                            System.Windows.MessageBox.Show(
+                                "Файл не содержит номеров телефонов",
+                                "Предупреждение",
+                                System.Windows.MessageBoxButton.OK,
+                                System.Windows.MessageBoxImage.Warning);
+                            return;
                         }
                         
-                        _logger.LogInfo($"Successfully imported {importedCount} out of {_phoneNumbers.Count} phone numbers");
+                        // Show progress dialog (modal)
+                        var progressWindow = new ImportProgressWindow
+                        {
+                            Owner = System.Windows.Application.Current.MainWindow
+                        };
                         
-                        System.Windows.MessageBox.Show(
-                            $"Импортировано {importedCount} из {_phoneNumbers.Count} номеров телефонов в базу данных",
-                            "Импорт завершен",
-                            System.Windows.MessageBoxButton.OK,
-                            System.Windows.MessageBoxImage.Information);
+                        // Run import in background task
+                        int importedCount = 0;
+                        Exception? importException = null;
+                        
+                        var importTask = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                // Import phone numbers to database with default states
+                                importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers, 
+                                    (current, total, currentNumber) =>
+                                    {
+                                        // Update progress on UI thread
+                                        progressWindow.Dispatcher.Invoke(() =>
+                                        {
+                                            progressWindow.UpdateProgress(current, total, currentNumber);
+                                        });
+                                    });
+                                
+                                TotalNumbers = _phoneNumbers.Count;
+                                
+                                // Refresh PhoneOffersViewModel to show newly imported numbers
+                                if (_phoneOffersViewModel != null)
+                                {
+                                    await _phoneOffersViewModel.LoadDataAsync();
+                                }
+                                
+                                _logger.LogInfo($"Successfully imported {importedCount} out of {_phoneNumbers.Count} phone numbers");
+                            }
+                            catch (Exception ex)
+                            {
+                                importException = ex;
+                                _logger.LogError("Error during phone numbers import", ex);
+                            }
+                            finally
+                            {
+                                // Close progress window when done
+                                progressWindow.Dispatcher.Invoke(() => progressWindow.AllowClose());
+                            }
+                        });
+                        
+                        // Start import task
+                        _ = importTask;
+                        
+                        // Show modal dialog (blocks until closed, which happens when import completes)
+                        progressWindow.ShowDialog();
+                        
+                        // Wait for import to complete (should already be done, but ensure)
+                        await importTask;
+                        
+                        // Show result message
+                        if (importException != null)
+                        {
+                            System.Windows.MessageBox.Show(
+                                $"Ошибка при импорте файла: {importException.Message}",
+                                "Ошибка",
+                                System.Windows.MessageBoxButton.OK,
+                                System.Windows.MessageBoxImage.Error);
+                        }
+                        else
+                        {
+                            System.Windows.MessageBox.Show(
+                                $"Импортировано {importedCount} из {_phoneNumbers.Count} номеров телефонов в базу данных",
+                                "Импорт завершен",
+                                System.Windows.MessageBoxButton.OK,
+                                System.Windows.MessageBoxImage.Information);
+                        }
                     }
                     catch (Exception ex)
                     {

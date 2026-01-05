@@ -1,7 +1,7 @@
 using System.Windows;
-using VodafoneLogin.ViewModels;
+using VodafoneNumberChecker.ViewModels;
 
-namespace VodafoneLogin
+namespace VodafoneNumberChecker
 {
     public partial class ConfigWindow : Window
     {

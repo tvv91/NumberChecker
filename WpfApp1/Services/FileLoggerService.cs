@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace VodafoneLogin.Services
+namespace VodafoneNumberChecker.Services
 {
     public class FileLoggerService : ILoggerService
     {

@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using VodafoneLogin.Models;
+using VodafoneNumberChecker.Models;
 
-namespace VodafoneLogin.ViewModels
+namespace VodafoneNumberChecker.ViewModels
 {
     public class ConfigViewModel : INotifyPropertyChanged
     {

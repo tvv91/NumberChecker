@@ -1,4 +1,4 @@
-namespace VodafoneLogin.Models
+namespace VodafoneNumberChecker.Models
 {
     public class ProcessingConfiguration
     {

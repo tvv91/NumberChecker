@@ -1,10 +1,10 @@
 ﻿using Microsoft.Web.WebView2.Core;
 using System.Windows;
 using System.Windows.Controls;
-using VodafoneLogin.ViewModels;
-using VodafoneLogin.Services;
+using VodafoneNumberChecker.ViewModels;
+using VodafoneNumberChecker.Services;
 
-namespace VodafoneLogin
+namespace VodafoneNumberChecker
 {
     public partial class MainWindow : Window
     {
@@ -142,8 +142,8 @@ namespace VodafoneLogin
                 { "IsProcessed", 100.0 },
                 { "Ошибка", 60.0 },
                 { "Описание ошибки", 200.0 },
-                { "Предложений не найдено", 150.0 },
-                { "Предложения не подходят", 150.0 }
+                { "Нет предложений", 150.0 },
+                { "Нет подходящих", 150.0 }
             };
 
             // Find and update all columns

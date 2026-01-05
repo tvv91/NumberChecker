@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using VodafoneLogin.Models;
+using VodafoneNumberChecker.Models;
 
-namespace VodafoneLogin.Data
+namespace VodafoneNumberChecker.Data
 {
     public class AppDbContext : DbContext
     {

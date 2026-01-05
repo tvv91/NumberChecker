@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using VodafoneLogin.Data;
-using VodafoneLogin.Models;
+using VodafoneNumberChecker.Data;
+using VodafoneNumberChecker.Models;
 
-namespace VodafoneLogin.Services
+namespace VodafoneNumberChecker.Services
 {
     public class DataService : IDataService
     {
@@ -181,15 +181,17 @@ namespace VodafoneLogin.Services
             return phoneOffer.Id;
         }
 
-        public async Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers)
+        public async Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers, Action<int, int, string?>? progressCallback = null)
         {
             // Clear all existing phone offers first
             await ClearAllPhoneOffersAsync();
             
             int importedCount = 0;
+            int total = phoneNumbers.Count;
             
-            foreach (var phoneNumber in phoneNumbers)
+            for (int i = 0; i < phoneNumbers.Count; i++)
             {
+                var phoneNumber = phoneNumbers[i];
                 try
                 {
                     await ImportPhoneNumberAsync(phoneNumber);
@@ -198,7 +200,17 @@ namespace VodafoneLogin.Services
                 catch
                 {
                     // Skip duplicates or errors, continue with next number
-                    continue;
+                }
+                finally
+                {
+                    // Report progress (including current number being processed)
+                    progressCallback?.Invoke(importedCount, total, phoneNumber);
+                    
+                    // Small delay to allow UI to update
+                    if (i % 10 == 0 || i == phoneNumbers.Count - 1)
+                    {
+                        await Task.Delay(1);
+                    }
                 }
             }
             
@@ -398,94 +410,58 @@ namespace VodafoneLogin.Services
             
             var query = context.PhoneOffers.AsQueryable();
 
+            // Phone filter (text search) - always applied with AND
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
             }
 
-            // If both filters are true, use OR logic (items with discount OR gift)
-            if (hasDiscount.HasValue && hasDiscount.Value && hasGift.HasValue && hasGift.Value)
-            {
-                query = query.Where(p => p.DiscountPercent > 0 || p.GiftAmount > 0);
-            }
-            else
-            {
-                // Otherwise, apply filters independently
-                if (hasDiscount.HasValue)
-                {
-                    if (hasDiscount.Value)
-                        query = query.Where(p => p.DiscountPercent > 0);
-                    else
-                        query = query.Where(p => p.DiscountPercent == 0);
-                }
+            // Build OR conditions for all checked positive filters
+            bool hasAnyPositiveFilter = false;
+            bool hasDiscountFilter = hasDiscount.HasValue && hasDiscount.Value;
+            bool hasGiftFilter = hasGift.HasValue && hasGift.Value;
+            bool hasErrorFilter = hasError.HasValue && hasError.Value;
+            bool hasNotFoundFilter = isPropositionsNotFound.HasValue && isPropositionsNotFound.Value;
+            bool hasNotSuitableFilter = isPropositionsNotSuitable.HasValue && isPropositionsNotSuitable.Value;
 
-                if (hasGift.HasValue)
-                {
-                    if (hasGift.Value)
-                        query = query.Where(p => p.GiftAmount > 0);
-                    else
-                        query = query.Where(p => p.GiftAmount == 0);
-                }
+            if (hasDiscountFilter || hasGiftFilter || hasErrorFilter || hasNotFoundFilter || hasNotSuitableFilter)
+            {
+                hasAnyPositiveFilter = true;
+                // Combine all positive filters with OR logic
+                query = query.Where(p => 
+                    (hasDiscountFilter && p.DiscountPercent > 0) ||
+                    (hasGiftFilter && p.GiftAmount > 0) ||
+                    (hasErrorFilter && p.IsError) ||
+                    (hasNotFoundFilter && p.IsPropositionsNotFound) ||
+                    (hasNotSuitableFilter && p.IsPropositionsNotSuitable));
             }
 
-            // Filter for empty propositions (IsProcessed = true, but no discount and no gift)
-            if (isEmptyProposition.HasValue)
+            // Apply negative filters only if no positive filters are set
+            if (!hasAnyPositiveFilter)
             {
-                if (isEmptyProposition.Value)
+                if (hasDiscount.HasValue && !hasDiscount.Value)
                 {
-                    query = query.Where(p => p.IsProcessed && p.DiscountPercent == 0 && p.GiftAmount == 0);
+                    query = query.Where(p => p.DiscountPercent == 0);
                 }
-                else
-                {
-                    query = query.Where(p => !p.IsProcessed || p.DiscountPercent > 0 || p.GiftAmount > 0);
-                }
-            }
 
-            // Filter for error numbers
-            if (hasError.HasValue)
-            {
-                if (hasError.Value)
+                if (hasGift.HasValue && !hasGift.Value)
                 {
-                    query = query.Where(p => p.IsError);
+                    query = query.Where(p => p.GiftAmount == 0);
                 }
-                else
+
+                if (hasError.HasValue && !hasError.Value)
                 {
                     query = query.Where(p => !p.IsError);
                 }
-            }
 
-            // Filter for propositions not found and not suitable - use OR logic when both are selected
-            if (isPropositionsNotFound.HasValue && isPropositionsNotFound.Value && 
-                isPropositionsNotSuitable.HasValue && isPropositionsNotSuitable.Value)
-            {
-                // Both selected - use OR logic (items with either condition)
-                query = query.Where(p => p.IsPropositionsNotFound || p.IsPropositionsNotSuitable);
-            }
-            else
-            {
-                // Apply filters independently
-                if (isPropositionsNotFound.HasValue)
+                if (isPropositionsNotFound.HasValue && !isPropositionsNotFound.Value)
                 {
-                    if (isPropositionsNotFound.Value)
-                    {
-                        query = query.Where(p => p.IsPropositionsNotFound);
-                    }
-                    else
-                    {
-                        query = query.Where(p => !p.IsPropositionsNotFound);
-                    }
+                    query = query.Where(p => !p.IsPropositionsNotFound);
                 }
 
-                if (isPropositionsNotSuitable.HasValue)
+                if (isPropositionsNotSuitable.HasValue && !isPropositionsNotSuitable.Value)
                 {
-                    if (isPropositionsNotSuitable.Value)
-                    {
-                        query = query.Where(p => p.IsPropositionsNotSuitable);
-                    }
-                    else
-                    {
-                        query = query.Where(p => !p.IsPropositionsNotSuitable);
-                    }
+                    query = query.Where(p => !p.IsPropositionsNotSuitable);
                 }
             }
 
@@ -502,94 +478,58 @@ namespace VodafoneLogin.Services
             
             var query = context.PhoneOffers.AsQueryable();
 
+            // Phone filter (text search) - always applied with AND
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
             }
 
-            // If both filters are true, use OR logic (items with discount OR gift)
-            if (hasDiscount.HasValue && hasDiscount.Value && hasGift.HasValue && hasGift.Value)
-            {
-                query = query.Where(p => p.DiscountPercent > 0 || p.GiftAmount > 0);
-            }
-            else
-            {
-                // Otherwise, apply filters independently
-                if (hasDiscount.HasValue)
-                {
-                    if (hasDiscount.Value)
-                        query = query.Where(p => p.DiscountPercent > 0);
-                    else
-                        query = query.Where(p => p.DiscountPercent == 0);
-                }
+            // Build OR conditions for all checked positive filters
+            bool hasAnyPositiveFilter = false;
+            bool hasDiscountFilter = hasDiscount.HasValue && hasDiscount.Value;
+            bool hasGiftFilter = hasGift.HasValue && hasGift.Value;
+            bool hasErrorFilter = hasError.HasValue && hasError.Value;
+            bool hasNotFoundFilter = isPropositionsNotFound.HasValue && isPropositionsNotFound.Value;
+            bool hasNotSuitableFilter = isPropositionsNotSuitable.HasValue && isPropositionsNotSuitable.Value;
 
-                if (hasGift.HasValue)
-                {
-                    if (hasGift.Value)
-                        query = query.Where(p => p.GiftAmount > 0);
-                    else
-                        query = query.Where(p => p.GiftAmount == 0);
-                }
+            if (hasDiscountFilter || hasGiftFilter || hasErrorFilter || hasNotFoundFilter || hasNotSuitableFilter)
+            {
+                hasAnyPositiveFilter = true;
+                // Combine all positive filters with OR logic
+                query = query.Where(p => 
+                    (hasDiscountFilter && p.DiscountPercent > 0) ||
+                    (hasGiftFilter && p.GiftAmount > 0) ||
+                    (hasErrorFilter && p.IsError) ||
+                    (hasNotFoundFilter && p.IsPropositionsNotFound) ||
+                    (hasNotSuitableFilter && p.IsPropositionsNotSuitable));
             }
 
-            // Filter for empty propositions (IsProcessed = true, but no discount and no gift)
-            if (isEmptyProposition.HasValue)
+            // Apply negative filters only if no positive filters are set
+            if (!hasAnyPositiveFilter)
             {
-                if (isEmptyProposition.Value)
+                if (hasDiscount.HasValue && !hasDiscount.Value)
                 {
-                    query = query.Where(p => p.IsProcessed && p.DiscountPercent == 0 && p.GiftAmount == 0);
+                    query = query.Where(p => p.DiscountPercent == 0);
                 }
-                else
-                {
-                    query = query.Where(p => !p.IsProcessed || p.DiscountPercent > 0 || p.GiftAmount > 0);
-                }
-            }
 
-            // Filter for error numbers
-            if (hasError.HasValue)
-            {
-                if (hasError.Value)
+                if (hasGift.HasValue && !hasGift.Value)
                 {
-                    query = query.Where(p => p.IsError);
+                    query = query.Where(p => p.GiftAmount == 0);
                 }
-                else
+
+                if (hasError.HasValue && !hasError.Value)
                 {
                     query = query.Where(p => !p.IsError);
                 }
-            }
 
-            // Filter for propositions not found and not suitable - use OR logic when both are selected
-            if (isPropositionsNotFound.HasValue && isPropositionsNotFound.Value && 
-                isPropositionsNotSuitable.HasValue && isPropositionsNotSuitable.Value)
-            {
-                // Both selected - use OR logic (items with either condition)
-                query = query.Where(p => p.IsPropositionsNotFound || p.IsPropositionsNotSuitable);
-            }
-            else
-            {
-                // Apply filters independently
-                if (isPropositionsNotFound.HasValue)
+                if (isPropositionsNotFound.HasValue && !isPropositionsNotFound.Value)
                 {
-                    if (isPropositionsNotFound.Value)
-                    {
-                        query = query.Where(p => p.IsPropositionsNotFound);
-                    }
-                    else
-                    {
-                        query = query.Where(p => !p.IsPropositionsNotFound);
-                    }
+                    query = query.Where(p => !p.IsPropositionsNotFound);
                 }
 
-                if (isPropositionsNotSuitable.HasValue)
+                if (isPropositionsNotSuitable.HasValue && !isPropositionsNotSuitable.Value)
                 {
-                    if (isPropositionsNotSuitable.Value)
-                    {
-                        query = query.Where(p => p.IsPropositionsNotSuitable);
-                    }
-                    else
-                    {
-                        query = query.Where(p => !p.IsPropositionsNotSuitable);
-                    }
+                    query = query.Where(p => !p.IsPropositionsNotSuitable);
                 }
             }
 

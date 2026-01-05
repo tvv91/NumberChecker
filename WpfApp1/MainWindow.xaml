@@ -1,8 +1,8 @@
-﻿<Window x:Class="VodafoneLogin.MainWindow"
+﻿<Window x:Class="VodafoneNumberChecker.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-        xmlns:converters="clr-namespace:VodafoneLogin.Converters"
+        xmlns:converters="clr-namespace:VodafoneNumberChecker.Converters"
         Title="Vodafone Login" Height="1000" Width="1900"
         MinHeight="600" MinWidth="1200"
         MaxHeight="1080" MaxWidth="1920"
@@ -207,12 +207,12 @@
                                                   Margin="5,0,5,0"/>
                                         
                                         <CheckBox Grid.Column="3" 
-                                                  Content="Предложений не найдено" 
+                                                  Content="Нет предложений" 
                                                   IsChecked="{Binding IsPropositionsNotFound, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
                                         <CheckBox Grid.Column="4" 
-                                                  Content="Предложения не подходят" 
+                                                  Content="Нет подходящих" 
                                                   IsChecked="{Binding IsPropositionsNotSuitable, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
@@ -285,8 +285,8 @@
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Ошибка" Binding="{Binding IsError}" Width="60"/>
                             <DataGridTextColumn Header="Описание ошибки" Binding="{Binding ErrorDescription}" Width="200"/>
-                            <DataGridTextColumn Header="Предложений не найдено" Binding="{Binding IsPropositionsNotFound}" Width="150" x:Name="colIsPropositionsNotFound"/>
-                            <DataGridTextColumn Header="Предложения не подходят" Binding="{Binding IsPropositionsNotSuitable}" Width="150" x:Name="colIsPropositionsNotSuitable"/>
+                            <DataGridTextColumn Header="Нет предложений" Binding="{Binding IsPropositionsNotFound}" Width="150" x:Name="colIsPropositionsNotFound"/>
+                            <DataGridTextColumn Header="Нет подходящих" Binding="{Binding IsPropositionsNotSuitable}" Width="150" x:Name="colIsPropositionsNotSuitable"/>
                         </DataGrid.Columns>
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">

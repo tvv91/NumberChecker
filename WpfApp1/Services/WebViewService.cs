@@ -1,7 +1,7 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 
-namespace VodafoneLogin.Services
+namespace VodafoneNumberChecker.Services
 {
     public class WebViewService : IWebViewService
     {

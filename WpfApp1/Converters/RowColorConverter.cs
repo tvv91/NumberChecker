@@ -2,9 +2,9 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
-using VodafoneLogin.Models;
+using VodafoneNumberChecker.Models;
 
-namespace VodafoneLogin.Converters
+namespace VodafoneNumberChecker.Converters
 {
     public class RowColorConverter : IMultiValueConverter
     {
@@ -24,14 +24,18 @@ namespace VodafoneLogin.Converters
 
                 // Processed with error - Red
                 if (offer.IsError)
-                    return new SolidColorBrush(Color.FromRgb(255, 224, 224)); // Light red
+                    return new SolidColorBrush(Color.FromRgb(255, 180, 180)); // Very bright red
 
                 // Processed, found propositions - Green
                 if (offer.DiscountPercent > 0 || offer.GiftAmount > 0)
-                    return new SolidColorBrush(Color.FromRgb(224, 255, 224)); // Light green
+                    return new SolidColorBrush(Color.FromRgb(180, 255, 180)); // Very bright green
 
-                // Processed, no propositions - Grey
-                return new SolidColorBrush(Color.FromRgb(255, 255, 224)); // Yello
+                // Processed, propositions not suitable - Blue
+                if (offer.IsPropositionsNotSuitable)
+                    return new SolidColorBrush(Color.FromRgb(180, 180, 255)); // Very bright blue
+
+                // Processed, no propositions - Yellow
+                return new SolidColorBrush(Color.FromRgb(255, 255, 180)); // Very bright yellow
             }
 
             return Brushes.Transparent;

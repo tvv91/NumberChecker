@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace VodafoneLogin.Services
+namespace VodafoneNumberChecker.Services
 {
     public class FileService : IFileService
     {

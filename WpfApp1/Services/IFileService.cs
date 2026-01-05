@@ -1,4 +1,4 @@
-namespace VodafoneLogin.Services
+namespace VodafoneNumberChecker.Services
 {
     public interface IFileService
     {

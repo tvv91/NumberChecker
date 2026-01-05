@@ -3,10 +3,10 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows.Threading;
-using VodafoneLogin.Models;
-using VodafoneLogin.Services;
+using VodafoneNumberChecker.Models;
+using VodafoneNumberChecker.Services;
 
-namespace VodafoneLogin.ViewModels
+namespace VodafoneNumberChecker.ViewModels
 {
     public class PhoneOffersViewModel : INotifyPropertyChanged
     {

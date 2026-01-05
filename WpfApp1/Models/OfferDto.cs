@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace VodafoneLogin.Models
+namespace VodafoneNumberChecker.Models
 {
     internal class OfferDto
     {

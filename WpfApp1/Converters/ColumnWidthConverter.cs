@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace VodafoneLogin.Converters
+namespace VodafoneNumberChecker.Converters
 {
     public class ColumnWidthConverter : IMultiValueConverter
     {

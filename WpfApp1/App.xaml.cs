@@ -3,11 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
-using VodafoneLogin.Data;
-using VodafoneLogin.Services;
-using VodafoneLogin.ViewModels;
+using VodafoneNumberChecker.Data;
+using VodafoneNumberChecker.Services;
+using VodafoneNumberChecker.ViewModels;
 
-namespace VodafoneLogin
+namespace VodafoneNumberChecker
 {
     /// <summary>
     /// Interaction logic for App.xaml

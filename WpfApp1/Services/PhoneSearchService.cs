@@ -1,7 +1,7 @@
 using System.Text.Json;
-using VodafoneLogin.Models;
+using VodafoneNumberChecker.Models;
 
-namespace VodafoneLogin.Services
+namespace VodafoneNumberChecker.Services
 {
     public class PhoneSearchService : IPhoneSearchService
     {
