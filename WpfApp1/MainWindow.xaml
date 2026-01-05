@@ -3,8 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:converters="clr-namespace:VodafoneLogin.Converters"
-        Title="Vodafone Login" Height="800" Width="1400"
+        Title="Vodafone Login" Height="1000" Width="1900"
+        MinHeight="600" MinWidth="1200"
+        MaxHeight="1080" MaxWidth="1920"
         WindowStartupLocation="CenterScreen"
+        WindowState="Normal"
+        SizeToContent="Manual"
         Loaded="Window_Loaded">
     <Window.Resources>
         <converters:RowColorConverter x:Key="RowColorConverter"/>
@@ -155,9 +159,9 @@
                     </Grid.RowDefinitions>
                     
                     <!-- Filters -->
-                    <Border Grid.Row="0" Background="#F0F0F0" Padding="10" Margin="5">
+                    <Border Grid.Row="0" Background="#F0F0F0" Padding="12" Margin="5">
                         <StackPanel>
-                            <TextBlock Text="Фильтры" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <TextBlock Text="Фильтры" FontWeight="Bold" FontSize="13" Margin="0,0,0,6"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -233,6 +237,8 @@
                               GridLinesVisibility="All"
                               HeadersVisibility="Column"
                               Margin="5"
+                              FontSize="12"
+                              RowHeight="26"
                               x:Name="phoneOffersDataGrid"
                               Loaded="PhoneOffersDataGrid_Loaded">
                         <DataGrid.Columns>
@@ -277,7 +283,7 @@
                     </DataGrid>
                     
                     <!-- Pagination -->
-                    <Border Grid.Row="2" Background="#F0F0F0" Padding="10" Margin="5">
+                    <Border Grid.Row="2" Background="#F0F0F0" Padding="12" Margin="5">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -286,6 +292,7 @@
                             
                             <TextBlock Grid.Column="0" 
                                        Text="{Binding PageInfo}" 
+                                       FontSize="12"
                                        VerticalAlignment="Center"/>
                             
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -320,21 +327,21 @@
             </Grid.ColumnDefinitions>
 
             <!-- Ввод номера -->
-            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="10,0">
-                <TextBlock Text="Ввод номера" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
-                <ProgressBar Minimum="0" Maximum="100" Height="8" Margin="0,5,0,0" Value="{Binding ProgressInput}"/>
+            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="12,8">
+                <TextBlock Text="Ввод номера" HorizontalAlignment="Center" FontWeight="Bold" FontSize="12" Margin="0,0,0,6"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="10" Margin="0,6,0,0" Value="{Binding ProgressInput}"/>
             </StackPanel>
 
             <!-- Нажатие на поиск -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
-                <TextBlock Text="Нажатие на поиск" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
-                <ProgressBar Minimum="0" Maximum="100" Height="8" Margin="0,5,0,0" Value="{Binding ProgressSearch}"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,8">
+                <TextBlock Text="Нажатие на поиск" HorizontalAlignment="Center" FontWeight="Bold" FontSize="12" Margin="0,0,0,6"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="10" Margin="0,6,0,0" Value="{Binding ProgressSearch}"/>
             </StackPanel>
 
             <!-- Следующий номер -->
-            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="10,0">
-                <TextBlock Text="Следующий номер" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
-                <ProgressBar Minimum="0" Maximum="100" Height="8" Margin="0,5,0,0" Value="{Binding ProgressNext}"/>
+            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,8">
+                <TextBlock Text="Следующий номер" HorizontalAlignment="Center" FontWeight="Bold" FontSize="12" Margin="0,0,0,6"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="10" Margin="0,6,0,0" Value="{Binding ProgressNext}"/>
             </StackPanel>
         </Grid>
         <!-- Status Bar -->
@@ -347,15 +354,15 @@
                 </Grid.ColumnDefinitions>
                 
                 <!-- Left: Action Buttons -->
-                <StackPanel Grid.Column="0" Orientation="Vertical" Margin="15,10">
+                <StackPanel Grid.Column="0" Orientation="Vertical" Margin="18,12">
                     <!-- Authentication Status Message -->
                     <Border Background="#FFF3CD" BorderBrush="#FFC107" BorderThickness="1" CornerRadius="4" 
-                            Padding="8,6" Margin="0,0,0,8" 
+                            Padding="10,8" Margin="0,0,0,10" 
                             Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚠" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="⚠" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <TextBlock Text="Требуется авторизация. Пожалуйста, войдите в систему в WebView." 
-                                     FontSize="12" FontWeight="SemiBold" Foreground="#856404" VerticalAlignment="Center"/>
+                                     FontSize="13" FontWeight="SemiBold" Foreground="#856404" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                     
@@ -390,48 +397,53 @@
                 </StackPanel>
                 
                 <!-- Center: Statistics -->
-                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center" Margin="10">
+                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center" Margin="12">
                     <!-- Iteration Info -->
-                    <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0,5,5" 
+                    <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0,6,6" 
                             Visibility="{Binding IterationInfo, Converter={StaticResource StringToVisibilityConverter}}"
                             Background="#E3F2FD" BorderBrush="#2196F3">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔄" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="🔄" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding IterationInfo}" 
+                                     FontSize="13"
                                      FontWeight="Bold" VerticalAlignment="Center" Foreground="#1976D2"/>
                         </StackPanel>
                     </Border>
                     
                     <!-- Statistics Row -->
                     <StackPanel Orientation="Horizontal">
-                        <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                        <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📊" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="📊" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding TotalNumbers, StringFormat='Всего: {0}'}" 
+                                         FontSize="13"
                                          FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
                         
-                        <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                        <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="✓" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#28A745"/>
+                                <TextBlock Text="✓" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#28A745"/>
                                 <TextBlock Text="{Binding ProcessedCount, StringFormat='Обработано: {0}'}" 
+                                         FontSize="13"
                                          FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
                         
-                        <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                        <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🎁" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#17A2B8"/>
+                                <TextBlock Text="🎁" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#17A2B8"/>
                                 <TextBlock Text="{Binding OffersFoundCount, StringFormat='Найдено: {0}'}" 
+                                         FontSize="13"
                                          FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
                         
-                        <Border Style="{StaticResource StatBadgeStyle}" Margin="5,0">
+                        <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="⚠" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#DC3545"/>
+                                <TextBlock Text="⚠" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#DC3545"/>
                                 <TextBlock Text="{Binding ServerErrors, StringFormat='Ошибки: {0}'}" 
+                                         FontSize="13"
                                          FontWeight="SemiBold" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
@@ -439,13 +451,13 @@
                 </StackPanel>
                 
                 <!-- Right: Current Number -->
-                <Border Grid.Column="2" Style="{StaticResource CurrentNumberBadgeStyle}" Margin="15,10">
+                <Border Grid.Column="2" Style="{StaticResource CurrentNumberBadgeStyle}" Margin="18,12">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📱" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="📱" FontSize="20" Margin="0,0,10,0" VerticalAlignment="Center"/>
                         <StackPanel>
-                            <TextBlock Text="Текущий номер" FontSize="11" Opacity="0.7" Margin="0,0,0,2"/>
+                            <TextBlock Text="Текущий номер" FontSize="12" Opacity="0.7" Margin="0,0,0,3"/>
                             <TextBlock Text="{Binding CurrentNumber}" 
-                                     FontSize="14" FontWeight="Bold" Foreground="#007BFF"/>
+                                     FontSize="15" FontWeight="Bold" Foreground="#007BFF"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
