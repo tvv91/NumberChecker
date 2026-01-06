@@ -15,8 +15,5 @@ namespace VodafoneNumberChecker.Models
         public string Content { get; set; } = null!;
 
         public int Count { get; set; } = 1;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
     }
 }

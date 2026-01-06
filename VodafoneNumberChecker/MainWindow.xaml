@@ -380,10 +380,8 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="Count" Binding="{Binding Count}" Width="80" CanUserSort="True" SortMemberPath="Count"/>
-                            <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140"/>
-                            <DataGridTextColumn Header="Updated At" Binding="{Binding UpdatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140"/>
-                            <DataGridTemplateColumn Header="Content" Width="*" MinWidth="300">
+                             <DataGridTextColumn Header="Count" Binding="{Binding Count}" Width="80" CanUserSort="True" SortMemberPath="Count"/>
+                             <DataGridTemplateColumn Header="Content" Width="*" MinWidth="300">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

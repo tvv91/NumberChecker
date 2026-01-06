@@ -213,11 +213,6 @@ namespace VodafoneNumberChecker.Services
                     title = pointMatch[1].trim();
                 }
                 
-                // Skip if title contains the gift proposition text
-                if (title.includes('Отримайте подарунок за поповнення!')) {
-                    continue;
-                }
-                
                 // Get content from the panel body - find the first div with actual text content
                 const bodyDivs = panel.querySelectorAll('.mat-expansion-panel-body > div');
                 let content = '';

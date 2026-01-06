@@ -90,10 +90,48 @@ namespace VodafoneNumberChecker.Services
                     await command.ExecuteNonQueryAsync();
                 }
                 
-                // Drop synchronization columns if they exist (SQLite doesn't support DROP COLUMN, so we'll ignore them)
-                // These columns will remain in the database but won't be used by the application
-                // To fully remove them, you would need to recreate the table, which is complex
-                // For now, we'll just ensure they're not referenced in code
+                // Drop CreatedAt and UpdatedAt columns from PropositionTypes if they exist
+                // SQLite 3.35.0+ supports DROP COLUMN, but we'll check version first
+                try
+                {
+                    // Check SQLite version
+                    command.CommandText = "SELECT sqlite_version();";
+                    var versionResult = await command.ExecuteScalarAsync();
+                    if (versionResult != null)
+                    {
+                        var version = versionResult.ToString();
+                        // SQLite 3.35.0+ supports DROP COLUMN
+                        if (version.CompareTo("3.35.0") >= 0)
+                        {
+                            // Check if CreatedAt column exists in PropositionTypes
+                            command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('PropositionTypes') WHERE name='CreatedAt';";
+                            result = await command.ExecuteScalarAsync();
+                            count = Convert.ToInt32(result);
+                            
+                            if (count > 0)
+                            {
+                                command.CommandText = "ALTER TABLE PropositionTypes DROP COLUMN CreatedAt;";
+                                await command.ExecuteNonQueryAsync();
+                            }
+                            
+                            // Check if UpdatedAt column exists in PropositionTypes
+                            command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('PropositionTypes') WHERE name='UpdatedAt';";
+                            result = await command.ExecuteScalarAsync();
+                            count = Convert.ToInt32(result);
+                            
+                            if (count > 0)
+                            {
+                                command.CommandText = "ALTER TABLE PropositionTypes DROP COLUMN UpdatedAt;";
+                                await command.ExecuteNonQueryAsync();
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // If DROP COLUMN fails (old SQLite version), columns will remain but won't be used
+                    // This is acceptable - the application will work fine without them
+                }
                 
                 await connection.CloseAsync();
             }
@@ -540,30 +578,24 @@ namespace VodafoneNumberChecker.Services
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
+            // Find existing type by both Title AND Content
             var existingType = await context.PropositionTypes
-                .FirstOrDefaultAsync(p => p.Title == title);
+                .FirstOrDefaultAsync(p => p.Title == title && p.Content == content);
 
             if (existingType != null)
             {
-                // Update existing proposition type - increment count
+                // Exact match: same title AND same content - just increment count
                 existingType.Count++;
-                existingType.UpdatedAt = DateTime.UtcNow;
-                // Optionally update content if it's different
-                if (existingType.Content != content)
-                {
-                    existingType.Content = content;
-                }
                 await context.SaveChangesAsync();
             }
             else
             {
-                // Create new proposition type
+                // No exact match: either different title OR different content - create new entry
                 var propositionType = new PropositionType
                 {
                     Title = title,
                     Content = content,
-                    Count = 1,
-                    CreatedAt = DateTime.UtcNow
+                    Count = 1
                 };
                 
                 context.PropositionTypes.Add(propositionType);

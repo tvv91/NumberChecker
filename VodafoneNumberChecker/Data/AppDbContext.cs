@@ -37,8 +37,8 @@ namespace VodafoneNumberChecker.Data
             modelBuilder.Entity<PropositionType>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.Title).IsUnique();
-                entity.HasIndex(e => e.CreatedAt);
+                // Changed from unique index on Title to allow same title with different content
+                entity.HasIndex(e => new { e.Title, e.Content });
             });
         }
     }
