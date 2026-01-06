@@ -362,29 +362,48 @@
                               HeadersVisibility="Column"
                               Margin="5"
                               FontSize="12"
-                              RowHeight="26"
-                              x:Name="propositionTypesDataGrid">
+                              x:Name="propositionTypesDataGrid"
+                              Loaded="PropositionTypesDataGrid_Loaded">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
-                            <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*" MinWidth="200"/>
+                            <DataGridTemplateColumn Header="Title" MinWidth="200" CanUserResize="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Title}" 
+                                                   TextWrapping="NoWrap"
+                                                   Padding="5,2"
+                                                   VerticalAlignment="Center">
+                                            <TextBlock.ToolTip>
+                                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" MaxWidth="500"/>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Count" Binding="{Binding Count}" Width="80" CanUserSort="True" SortMemberPath="Count"/>
                             <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140"/>
                             <DataGridTextColumn Header="Updated At" Binding="{Binding UpdatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140"/>
                             <DataGridTemplateColumn Header="Content" Width="*" MinWidth="300">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Content}" 
-                                                   TextWrapping="Wrap" 
-                                                   MaxHeight="200"
-                                                   ScrollViewer.CanContentScroll="True">
-                                            <TextBlock.ToolTip>
-                                                <TextBlock Text="{Binding Content}" TextWrapping="Wrap" MaxWidth="500"/>
-                                            </TextBlock.ToolTip>
-                                        </TextBlock>
+                                        <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <TextBlock Text="{Binding Content}" 
+                                                       TextWrapping="Wrap"
+                                                       Padding="5,2">
+                                                <TextBlock.ToolTip>
+                                                    <TextBlock Text="{Binding Content}" TextWrapping="Wrap" MaxWidth="500"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </ScrollViewer>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                         </DataGrid.Columns>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="MinHeight" Value="30"/>
+                            </Style>
+                        </DataGrid.RowStyle>
                     </DataGrid>
                     
                     <!-- Pagination -->

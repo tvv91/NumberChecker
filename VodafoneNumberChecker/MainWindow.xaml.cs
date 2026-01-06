@@ -46,6 +46,9 @@ namespace VodafoneNumberChecker
                     propositionTypesTab.DataContext = _propositionTypesViewModel;
                     // Load data when window is loaded
                     await _propositionTypesViewModel.LoadDataAsync();
+                    
+                    // Subscribe to PropertyChanged to auto-size Title column when data changes
+                    _propositionTypesViewModel.PropertyChanged += PropositionTypesViewModel_PropertyChanged;
                 }
                 
                 // Set initial WebView tab visibility
@@ -183,6 +186,79 @@ namespace VodafoneNumberChecker
                     }
                 }
             }
+        }
+
+        private void PropositionTypesDataGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Auto-size Title column when DataGrid is loaded
+            UpdateTitleColumnWidth();
+        }
+
+        private void PropositionTypesViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PropositionTypesViewModel.PropositionTypes) && propositionTypesDataGrid != null)
+            {
+                // Auto-size Title column when data changes
+                Dispatcher.BeginInvoke(new Action(() => UpdateTitleColumnWidth()), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+        }
+
+        private void UpdateTitleColumnWidth()
+        {
+            if (propositionTypesDataGrid == null || _propositionTypesViewModel == null)
+                return;
+
+            if (_propositionTypesViewModel.PropositionTypes == null || _propositionTypesViewModel.PropositionTypes.Count == 0)
+                return;
+
+            // Find the Title column
+            DataGridTemplateColumn? titleColumn = null;
+            foreach (var column in propositionTypesDataGrid.Columns)
+            {
+                if (column is DataGridTemplateColumn templateColumn && templateColumn.Header?.ToString() == "Title")
+                {
+                    titleColumn = templateColumn;
+                    break;
+                }
+            }
+
+            if (titleColumn == null)
+                return;
+
+            // Create a temporary TextBlock to measure text with the same properties as in the template
+            var tempTextBlock = new TextBlock
+            {
+                FontSize = 12
+            };
+
+            double maxWidth = 200; // Start with MinWidth
+
+            // Measure each title
+            foreach (var propType in _propositionTypesViewModel.PropositionTypes)
+            {
+                if (string.IsNullOrEmpty(propType.Title))
+                    continue;
+
+                tempTextBlock.Text = propType.Title;
+                tempTextBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                // Add only the actual padding from template (left 5 + right 5 = 10) plus minimal margin for grid lines
+                double width = tempTextBlock.DesiredSize.Width + 12;
+
+                if (width > maxWidth)
+                    maxWidth = width;
+            }
+
+            // Also measure the header text
+            tempTextBlock.Text = "Title";
+            tempTextBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            // Header typically has more padding, add minimal extra
+            double headerWidth = tempTextBlock.DesiredSize.Width + 16;
+
+            if (headerWidth > maxWidth)
+                maxWidth = headerWidth;
+
+            // Set the column width
+            titleColumn.Width = new DataGridLength(maxWidth, DataGridLengthUnitType.Pixel);
         }
     }
 }
