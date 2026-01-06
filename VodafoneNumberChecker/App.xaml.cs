@@ -41,6 +41,10 @@ namespace VodafoneNumberChecker
                 // Load initial data for PhoneOffersViewModel
                 var phoneOffersViewModel = _serviceProvider.GetRequiredService<PhoneOffersViewModel>();
                 await phoneOffersViewModel.LoadDataAsync();
+                
+                // Load initial data for PropositionTypesViewModel
+                var propositionTypesViewModel = _serviceProvider.GetRequiredService<PropositionTypesViewModel>();
+                await propositionTypesViewModel.LoadDataAsync();
 
                 var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
                 mainWindow.Show();
@@ -123,6 +127,7 @@ namespace VodafoneNumberChecker
 
             // Register ViewModels - PhoneOffersViewModel and ConfigViewModel must be created first
             services.AddTransient<PhoneOffersViewModel>();
+            services.AddTransient<PropositionTypesViewModel>();
             services.AddSingleton<ConfigViewModel>();
             services.AddTransient<MainWindowViewModel>(sp =>
             {
@@ -139,7 +144,16 @@ namespace VodafoneNumberChecker
             });
 
             // Register Views
-            services.AddTransient<MainWindow>();
+            services.AddTransient<MainWindow>(sp =>
+            {
+                var phoneOffersViewModel = sp.GetRequiredService<PhoneOffersViewModel>();
+                var propositionTypesViewModel = sp.GetRequiredService<PropositionTypesViewModel>();
+                return new MainWindow(
+                    sp.GetRequiredService<MainWindowViewModel>(),
+                    phoneOffersViewModel,
+                    propositionTypesViewModel,
+                    sp.GetRequiredService<IWebViewService>());
+            });
         }
 
         protected override void OnExit(ExitEventArgs e)

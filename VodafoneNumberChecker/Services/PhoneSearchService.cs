@@ -157,6 +157,30 @@ namespace VodafoneNumberChecker.Services
                 offers = offerDtos?.Select(dto => dto.ToOffer()).ToList();
             }
 
+            // Extract and save proposition types (excluding gift propositions)
+            try
+            {
+                string rawPropositionTypesJson = await _webViewService.GetPropositionTypesJsonAsync();
+                string propositionTypesJson = JsonSerializer.Deserialize<string>(rawPropositionTypesJson) ?? "[]";
+                var propositionTypeDtos = JsonSerializer.Deserialize<List<PropositionTypeDto>>(propositionTypesJson);
+                
+                if (propositionTypeDtos != null && propositionTypeDtos.Count > 0)
+                {
+                    foreach (var propTypeDto in propositionTypeDtos)
+                    {
+                        if (!string.IsNullOrWhiteSpace(propTypeDto.Title) && !string.IsNullOrWhiteSpace(propTypeDto.Content))
+                        {
+                            await _dataService.SavePropositionTypeAsync(propTypeDto.Title, propTypeDto.Content);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the whole process
+                _logger.LogError($"Error saving proposition types for phone {phoneNumber}", ex);
+            }
+
             bool isPropositionsNotSuitable = false;
 
             if (offers != null && offers.Count > 0)

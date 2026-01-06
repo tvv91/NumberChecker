@@ -178,6 +178,70 @@ namespace VodafoneNumberChecker.Services
     ");
         }
 
+        public async Task<string> GetPropositionTypesJsonAsync()
+        {
+            if (WebView?.CoreWebView2 == null)
+                throw new InvalidOperationException("WebView is not initialized");
+
+            return await WebView.CoreWebView2.ExecuteScriptAsync(@"
+        (function () {
+            const panels = [...document.querySelectorAll('mat-expansion-panel')];
+            const propositionTypes = [];
+
+            for (const panel of panels) {
+                // Get title from h4 inside mat-panel-title
+                const titleElement = panel.querySelector('mat-panel-title h4');
+                if (!titleElement) continue;
+                
+                // Get the text from h4, but exclude any child elements like vf-state-chip
+                let title = '';
+                const titleNodes = titleElement.childNodes;
+                for (let node of titleNodes) {
+                    if (node.nodeType === 3) { // Text node
+                        title += node.textContent;
+                    }
+                }
+                title = title.trim();
+                
+                // If we didn't get title from text nodes, fall back to innerText
+                if (!title) {
+                    title = titleElement.innerText.trim();
+                }
+                
+                const pointMatch = title.match(/^(.*?)\s*Ставка за продаж/i);
+                if (pointMatch) {
+                    title = pointMatch[1].trim();
+                }
+                
+                // Skip if title contains the gift proposition text
+                if (title.includes('Отримайте подарунок за поповнення!')) {
+                    continue;
+                }
+                
+                // Get content from the panel body - find the first div with actual text content
+                const bodyDivs = panel.querySelectorAll('.mat-expansion-panel-body > div');
+                let content = '';
+                for (let div of bodyDivs) {
+                    const text = div.innerText.trim();
+                    if (text && text.length > 10) { // Only use divs with substantial content
+                        content = text;
+                        break;
+                    }
+                }
+                
+                if (title && content) {
+                    propositionTypes.push({
+                        Title: title,
+                        Content: content
+                    });
+                }
+            }
+
+            return JSON.stringify(propositionTypes);
+        })();
+    ");
+        }
+
         public async Task ExecuteScriptAsync(string script)
         {
             if (WebView?.CoreWebView2 == null)

@@ -10,14 +10,16 @@ namespace VodafoneNumberChecker
     {
         private readonly MainWindowViewModel _viewModel;
         private readonly PhoneOffersViewModel _phoneOffersViewModel;
+        private readonly PropositionTypesViewModel _propositionTypesViewModel;
         private readonly IWebViewService _webViewService;
         private bool _isWebViewVisible = true;
 
-        public MainWindow(MainWindowViewModel viewModel, PhoneOffersViewModel phoneOffersViewModel, IWebViewService webViewService)
+        public MainWindow(MainWindowViewModel viewModel, PhoneOffersViewModel phoneOffersViewModel, PropositionTypesViewModel propositionTypesViewModel, IWebViewService webViewService)
         {
             InitializeComponent();
             _viewModel = viewModel;
             _phoneOffersViewModel = phoneOffersViewModel;
+            _propositionTypesViewModel = propositionTypesViewModel;
             _webViewService = webViewService;
             
             // Set main ViewModel as DataContext
@@ -26,7 +28,7 @@ namespace VodafoneNumberChecker
             // Subscribe to authentication changes to show/hide WebView tab
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             
-            // Set PhoneOffersViewModel for the second tab
+            // Set PhoneOffersViewModel for the second tab and PropositionTypesViewModel for the third tab
             Loaded += async (s, e) =>
             {
                 if (phoneOffersTab != null)
@@ -37,6 +39,13 @@ namespace VodafoneNumberChecker
                     
                     // Subscribe to ShowAllFields changes to show/hide columns
                     _phoneOffersViewModel.PropertyChanged += PhoneOffersViewModel_PropertyChanged;
+                }
+                
+                if (propositionTypesTab != null)
+                {
+                    propositionTypesTab.DataContext = _propositionTypesViewModel;
+                    // Load data when window is loaded
+                    await _propositionTypesViewModel.LoadDataAsync();
                 }
                 
                 // Set initial WebView tab visibility

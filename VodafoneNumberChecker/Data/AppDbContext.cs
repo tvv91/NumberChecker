@@ -7,6 +7,7 @@ namespace VodafoneNumberChecker.Data
     {
         public DbSet<PhoneOffer> PhoneOffers { get; set; }
         public DbSet<SyncState> SyncStates { get; set; }
+        public DbSet<PropositionType> PropositionTypes { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -30,6 +31,14 @@ namespace VodafoneNumberChecker.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasData(new SyncState { Id = 1, LastProcessedPhoneId = null });
+            });
+
+            // Configure PropositionType
+            modelBuilder.Entity<PropositionType>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Title).IsUnique();
+                entity.HasIndex(e => e.CreatedAt);
             });
         }
     }

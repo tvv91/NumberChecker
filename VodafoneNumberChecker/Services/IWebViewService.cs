@@ -12,6 +12,7 @@ namespace VodafoneNumberChecker.Services
         Task WaitForOffersLoadedAsync(int timeoutMs = 8000);
         Task<bool> CheckServerErrorToastAsync();
         Task<string> GetOffersJsonAsync();
+        Task<string> GetPropositionTypesJsonAsync();
         Task ExecuteScriptAsync(string script);
         Task<bool> WaitForLoginOrNumberFieldAsync(string numberFieldSelector = "#phoneNumber", int timeoutMs = 5000);
         Task<bool> CheckAuthenticationAsync();

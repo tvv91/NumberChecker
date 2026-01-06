@@ -46,5 +46,14 @@ namespace VodafoneNumberChecker.Models
         [JsonPropertyName("IsPropositionsNotFound")]
         public bool IsPropositionsNotFound { get; set; }
     }
+
+    internal class PropositionTypeDto
+    {
+        [JsonPropertyName("Title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("Content")]
+        public string Content { get; set; } = string.Empty;
+    }
 }
 

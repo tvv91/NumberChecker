@@ -22,6 +22,8 @@ namespace VodafoneNumberChecker.Services
         Task ResetAllAsync();
         Task ClearAllPhoneOffersAsync();
         Task EnsureDatabaseCreatedAsync();
+        Task SavePropositionTypeAsync(string title, string content);
+        Task<List<PropositionType>> GetPropositionTypesAsync();
     }
 }
 

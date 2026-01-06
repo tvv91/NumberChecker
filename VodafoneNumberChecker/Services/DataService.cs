@@ -535,6 +535,51 @@ namespace VodafoneNumberChecker.Services
 
             return await query.CountAsync();
         }
+
+        public async Task SavePropositionTypeAsync(string title, string content)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            
+            var existingType = await context.PropositionTypes
+                .FirstOrDefaultAsync(p => p.Title == title);
+
+            if (existingType != null)
+            {
+                // Update existing proposition type - increment count
+                existingType.Count++;
+                existingType.UpdatedAt = DateTime.UtcNow;
+                // Optionally update content if it's different
+                if (existingType.Content != content)
+                {
+                    existingType.Content = content;
+                }
+                await context.SaveChangesAsync();
+            }
+            else
+            {
+                // Create new proposition type
+                var propositionType = new PropositionType
+                {
+                    Title = title,
+                    Content = content,
+                    Count = 1,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                context.PropositionTypes.Add(propositionType);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<List<PropositionType>> GetPropositionTypesAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            
+            return await context.PropositionTypes
+                .OrderByDescending(p => p.Count)
+                .ThenBy(p => p.Title)
+                .ToListAsync();
+        }
     }
 }
 
