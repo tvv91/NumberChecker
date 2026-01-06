@@ -22,20 +22,20 @@ namespace VodafoneNumberChecker.Converters
                 if (!offer.IsProcessed)
                     return Brushes.Transparent;
 
-                // Processed with error - Red
+                // Processed with error - Red (more saturated and contrasted)
                 if (offer.IsError)
-                    return new SolidColorBrush(Color.FromRgb(255, 180, 180)); // Very bright red
+                    return new SolidColorBrush(Color.FromRgb(255, 120, 120)); // Saturated red
 
-                // Processed, found propositions - Green
+                // Processed, found propositions - Green (more saturated and contrasted)
                 if (offer.DiscountPercent > 0 || offer.GiftAmount > 0)
-                    return new SolidColorBrush(Color.FromRgb(180, 255, 180)); // Very bright green
+                    return new SolidColorBrush(Color.FromRgb(80, 200, 80)); // Saturated green
 
-                // Processed, propositions not suitable - Blue
+                // Processed, propositions not suitable - Blue (more saturated and contrasted)
                 if (offer.IsPropositionsNotSuitable)
-                    return new SolidColorBrush(Color.FromRgb(180, 180, 255)); // Very bright blue
+                    return new SolidColorBrush(Color.FromRgb(120, 120, 255)); // Saturated blue
 
-                // Processed, no propositions - Yellow
-                return new SolidColorBrush(Color.FromRgb(255, 255, 180)); // Very bright yellow
+                // Processed, no propositions - Yellow (more saturated and contrasted)
+                return new SolidColorBrush(Color.FromRgb(255, 255, 100)); // Saturated yellow
             }
 
             return Brushes.Transparent;
