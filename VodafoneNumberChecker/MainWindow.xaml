@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:converters="clr-namespace:VodafoneNumberChecker.Converters"
-        Title="Vodafone Login" Height="1000" Width="1900"
+        Title="Vodafone Login" Height="900" Width="1600"
         MinHeight="600" MinWidth="1200"
         MaxHeight="1080" MaxWidth="1920"
         WindowStartupLocation="CenterScreen"
