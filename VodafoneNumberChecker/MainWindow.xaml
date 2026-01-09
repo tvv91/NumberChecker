@@ -524,6 +524,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     
                     <Button Grid.Column="0"
@@ -586,6 +587,19 @@
                                 <TextBlock Text="{Binding CurrentNumber}" 
                                          FontSize="15" FontWeight="Bold" Foreground="#007BFF"/>
                             </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Iteration Info -->
+                    <Border Grid.Column="8" Style="{StaticResource StatBadgeStyle}" Margin="6,0"
+                            HorizontalAlignment="Stretch"
+                            Visibility="{Binding IterationInfo, Converter={StaticResource StringToVisibilityConverter}}"
+                            Background="#E3F2FD" BorderBrush="#2196F3">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔄" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding IterationInfo}" 
+                                     FontSize="13"
+                                     FontWeight="Bold" VerticalAlignment="Center" Foreground="#1976D2"/>
                         </StackPanel>
                     </Border>
                 </Grid>
