@@ -612,6 +612,72 @@ namespace VodafoneNumberChecker.Services
                 .ThenBy(p => p.Title)
                 .ToListAsync();
         }
+
+        public async Task<List<PhoneOffer>> GetAllPhoneOffersForExportAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            
+            var query = context.PhoneOffers.AsQueryable();
+
+            // Phone filter (text search) - always applied with AND
+            if (!string.IsNullOrWhiteSpace(phoneFilter))
+            {
+                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+
+            // Build OR conditions for all checked positive filters
+            bool hasAnyPositiveFilter = false;
+            bool hasDiscountFilter = hasDiscount.HasValue && hasDiscount.Value;
+            bool hasGiftFilter = hasGift.HasValue && hasGift.Value;
+            bool hasErrorFilter = hasError.HasValue && hasError.Value;
+            bool hasNotFoundFilter = isPropositionsNotFound.HasValue && isPropositionsNotFound.Value;
+            bool hasNotSuitableFilter = isPropositionsNotSuitable.HasValue && isPropositionsNotSuitable.Value;
+
+            if (hasDiscountFilter || hasGiftFilter || hasErrorFilter || hasNotFoundFilter || hasNotSuitableFilter)
+            {
+                hasAnyPositiveFilter = true;
+                // Combine all positive filters with OR logic
+                query = query.Where(p => 
+                    (hasDiscountFilter && p.DiscountPercent > 0) ||
+                    (hasGiftFilter && p.GiftAmount > 0) ||
+                    (hasErrorFilter && p.IsError) ||
+                    (hasNotFoundFilter && p.IsPropositionsNotFound) ||
+                    (hasNotSuitableFilter && p.IsPropositionsNotSuitable));
+            }
+
+            // Apply negative filters only if no positive filters are set
+            if (!hasAnyPositiveFilter)
+            {
+                if (hasDiscount.HasValue && !hasDiscount.Value)
+                {
+                    query = query.Where(p => p.DiscountPercent == 0);
+                }
+
+                if (hasGift.HasValue && !hasGift.Value)
+                {
+                    query = query.Where(p => p.GiftAmount == 0);
+                }
+
+                if (hasError.HasValue && !hasError.Value)
+                {
+                    query = query.Where(p => !p.IsError);
+                }
+
+                if (isPropositionsNotFound.HasValue && !isPropositionsNotFound.Value)
+                {
+                    query = query.Where(p => !p.IsPropositionsNotFound);
+                }
+
+                if (isPropositionsNotSuitable.HasValue && !isPropositionsNotSuitable.Value)
+                {
+                    query = query.Where(p => !p.IsPropositionsNotSuitable);
+                }
+            }
+
+            return await query
+                .OrderBy(p => p.Id)
+                .ToListAsync();
+        }
     }
 }
 

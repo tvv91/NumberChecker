@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Microsoft.Win32;
+using OfficeOpenXml;
 using VodafoneNumberChecker.Models;
 using VodafoneNumberChecker.Services;
 
@@ -48,6 +51,7 @@ namespace VodafoneNumberChecker.ViewModels
                 CurrentPage = 1; 
                 await LoadDataAsync(); 
             });
+            ExportToExcelCommand = new RelayCommand(async () => await ExportToExcelAsync(), () => TotalCount > 0);
         }
 
         public ObservableCollection<PhoneOffer> PhoneOffers
@@ -160,6 +164,8 @@ namespace VodafoneNumberChecker.ViewModels
                 _totalCount = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(PageInfo));
+                // Update export command state
+                ((RelayCommand)ExportToExcelCommand).RaiseCanExecuteChanged();
             }
         }
 
@@ -224,6 +230,7 @@ namespace VodafoneNumberChecker.ViewModels
         public ICommand LastPageCommand { get; }
         public ICommand ApplyFilterCommand { get; }
         public ICommand ClearFilterCommand { get; }
+        public ICommand ExportToExcelCommand { get; }
 
         public async Task LoadDataAsync()
         {
@@ -268,6 +275,94 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 _realtimeTimer.Stop();
                 _realtimeTimer = null;
+            }
+        }
+
+        public async Task ExportToExcelAsync()
+        {
+            try
+            {
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "Excel files (*.xlsx)|*.xlsx|All files (*.*)|*.*",
+                    FileName = $"PhoneOffers_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx",
+                    DefaultExt = "xlsx"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    // Get all filtered data (without pagination)
+                    var allOffers = await _dataService.GetAllPhoneOffersForExportAsync(
+                        PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable);
+
+                    // Set license context for EPPlus (non-commercial use)
+                    ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+                    using var package = new ExcelPackage();
+                    var worksheet = package.Workbook.Worksheets.Add("Phone Offers");
+
+                    // Headers
+                    worksheet.Cells[1, 1].Value = "ID";
+                    worksheet.Cells[1, 2].Value = "Номер телефона";
+                    worksheet.Cells[1, 3].Value = "Скидка %";
+                    worksheet.Cells[1, 4].Value = "Мин. пополнение";
+                    worksheet.Cells[1, 5].Value = "Подарок";
+                    worksheet.Cells[1, 6].Value = "Дней действия";
+                    worksheet.Cells[1, 7].Value = "Действует до";
+                    worksheet.Cells[1, 8].Value = "Создано";
+                    worksheet.Cells[1, 9].Value = "Обновлено";
+                    worksheet.Cells[1, 10].Value = "Итераций";
+                    worksheet.Cells[1, 11].Value = "IsProcessed";
+                    worksheet.Cells[1, 12].Value = "Ошибка";
+                    worksheet.Cells[1, 13].Value = "Описание ошибки";
+                    worksheet.Cells[1, 14].Value = "Нет предложений";
+                    worksheet.Cells[1, 15].Value = "Нет подходящих";
+
+                    // Style header row
+                    using (var range = worksheet.Cells[1, 1, 1, 15])
+                    {
+                        range.Style.Font.Bold = true;
+                        range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                        range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                    }
+
+                    // Data rows
+                    for (int i = 0; i < allOffers.Count; i++)
+                    {
+                        var offer = allOffers[i];
+                        int row = i + 2;
+                        worksheet.Cells[row, 1].Value = offer.Id;
+                        worksheet.Cells[row, 2].Value = offer.PhoneNumber;
+                        worksheet.Cells[row, 3].Value = offer.DiscountPercent;
+                        worksheet.Cells[row, 4].Value = offer.MinTopupAmount;
+                        worksheet.Cells[row, 5].Value = offer.GiftAmount;
+                        worksheet.Cells[row, 6].Value = offer.ActiveDays;
+                        worksheet.Cells[row, 7].Value = offer.ValidUntil?.ToString("yyyy-MM-dd");
+                        worksheet.Cells[row, 8].Value = offer.CreatedAt.ToString("yyyy-MM-dd HH:mm");
+                        worksheet.Cells[row, 9].Value = offer.UpdatedAt?.ToString("yyyy-MM-dd HH:mm");
+                        worksheet.Cells[row, 10].Value = offer.IterationCount;
+                        worksheet.Cells[row, 11].Value = offer.IsProcessed;
+                        worksheet.Cells[row, 12].Value = offer.IsError;
+                        worksheet.Cells[row, 13].Value = offer.ErrorDescription;
+                        worksheet.Cells[row, 14].Value = offer.IsPropositionsNotFound;
+                        worksheet.Cells[row, 15].Value = offer.IsPropositionsNotSuitable;
+                    }
+
+                    // Auto-fit columns
+                    worksheet.Cells.AutoFitColumns();
+
+                    // Save file
+                    var fileInfo = new FileInfo(saveFileDialog.FileName);
+                    await package.SaveAsAsync(fileInfo);
+
+                    System.Windows.MessageBox.Show($"Экспортировано {allOffers.Count} записей в файл:\n{saveFileDialog.FileName}", 
+                        "Экспорт завершен", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Ошибка при экспорте: {ex.Message}", 
+                    "Ошибка", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
 

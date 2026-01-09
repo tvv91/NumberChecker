@@ -331,6 +331,10 @@
                                 <Button Content="Обновить" 
                                         Command="{Binding LoadDataCommand}" 
                                         Margin="2" Padding="10,5"/>
+                                <Button Content="📊 Экспорт в Excel" 
+                                        Command="{Binding ExportToExcelCommand}" 
+                                        Margin="2" Padding="10,5"
+                                        Style="{StaticResource PrimaryButtonStyle}"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -421,6 +425,10 @@
                                 <Button Content="Обновить" 
                                         Command="{Binding LoadDataCommand}" 
                                         Margin="2" Padding="10,5"/>
+                                <Button Content="📊 Экспорт в Excel" 
+                                        Command="{Binding ExportToExcelCommand}" 
+                                        Margin="2" Padding="10,5"
+                                        Style="{StaticResource PrimaryButtonStyle}"/>
                             </StackPanel>
                         </Grid>
                     </Border>
