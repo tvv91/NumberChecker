@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -30,6 +31,7 @@ namespace VodafoneNumberChecker.ViewModels
         private bool _useColors;
         private bool _showAllFields;
         private DispatcherTimer? _realtimeTimer;
+        private DispatcherTimer? _filterDebounceTimer;
         private int _discountCount;
         private int _giftCount;
         private int _errorCount;
@@ -74,8 +76,16 @@ namespace VodafoneNumberChecker.ViewModels
             get => _phoneFilter;
             set
             {
-                _phoneFilter = value;
-                OnPropertyChanged();
+                if (_phoneFilter != value)
+                {
+                    _phoneFilter = value;
+                    OnPropertyChanged();
+                    // Auto-apply filter only if real-time is enabled
+                    if (_isRealtime)
+                    {
+                        DebounceFilterApply();
+                    }
+                }
             }
         }
 
@@ -84,8 +94,16 @@ namespace VodafoneNumberChecker.ViewModels
             get => _hasDiscount;
             set
             {
-                _hasDiscount = value;
-                OnPropertyChanged();
+                if (_hasDiscount != value)
+                {
+                    _hasDiscount = value;
+                    OnPropertyChanged();
+                    // Auto-apply filter only if real-time is enabled
+                    if (_isRealtime)
+                    {
+                        DebounceFilterApply();
+                    }
+                }
             }
         }
 
@@ -94,8 +112,16 @@ namespace VodafoneNumberChecker.ViewModels
             get => _hasGift;
             set
             {
-                _hasGift = value;
-                OnPropertyChanged();
+                if (_hasGift != value)
+                {
+                    _hasGift = value;
+                    OnPropertyChanged();
+                    // Auto-apply filter only if real-time is enabled
+                    if (_isRealtime)
+                    {
+                        DebounceFilterApply();
+                    }
+                }
             }
         }
 
@@ -114,8 +140,16 @@ namespace VodafoneNumberChecker.ViewModels
             get => _hasError;
             set
             {
-                _hasError = value;
-                OnPropertyChanged();
+                if (_hasError != value)
+                {
+                    _hasError = value;
+                    OnPropertyChanged();
+                    // Auto-apply filter only if real-time is enabled
+                    if (_isRealtime)
+                    {
+                        DebounceFilterApply();
+                    }
+                }
             }
         }
 
@@ -124,8 +158,16 @@ namespace VodafoneNumberChecker.ViewModels
             get => _isPropositionsNotFound;
             set
             {
-                _isPropositionsNotFound = value;
-                OnPropertyChanged();
+                if (_isPropositionsNotFound != value)
+                {
+                    _isPropositionsNotFound = value;
+                    OnPropertyChanged();
+                    // Auto-apply filter only if real-time is enabled
+                    if (_isRealtime)
+                    {
+                        DebounceFilterApply();
+                    }
+                }
             }
         }
 
@@ -134,8 +176,16 @@ namespace VodafoneNumberChecker.ViewModels
             get => _isPropositionsNotSuitable;
             set
             {
-                _isPropositionsNotSuitable = value;
-                OnPropertyChanged();
+                if (_isPropositionsNotSuitable != value)
+                {
+                    _isPropositionsNotSuitable = value;
+                    OnPropertyChanged();
+                    // Auto-apply filter only if real-time is enabled
+                    if (_isRealtime)
+                    {
+                        DebounceFilterApply();
+                    }
+                }
             }
         }
 
@@ -338,6 +388,30 @@ namespace VodafoneNumberChecker.ViewModels
                 _realtimeTimer.Stop();
                 _realtimeTimer = null;
             }
+        }
+
+        private void DebounceFilterApply()
+        {
+            // Stop existing timer if any
+            if (_filterDebounceTimer != null)
+            {
+                _filterDebounceTimer.Stop();
+                _filterDebounceTimer = null;
+            }
+
+            // Create new timer to apply filter after a short delay
+            _filterDebounceTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(300) // 300ms debounce
+            };
+            _filterDebounceTimer.Tick += async (s, e) =>
+            {
+                _filterDebounceTimer.Stop();
+                _filterDebounceTimer = null;
+                CurrentPage = 1;
+                await LoadDataAsync();
+            };
+            _filterDebounceTimer.Start();
         }
 
         public async Task ExportToExcelAsync()

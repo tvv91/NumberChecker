@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:converters="clr-namespace:VodafoneNumberChecker.Converters"
+        xmlns:controls="clr-namespace:VodafoneNumberChecker.Controls"
         Title="Vodafone Login" Height="900" Width="1600"
         MinHeight="600" MinWidth="1200"
         MaxHeight="1080" MaxWidth="1920"
@@ -16,6 +17,7 @@
         <converters:ColumnWidthConverter x:Key="ColumnWidthConverter"/>
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <converters:NullableBoolToBoolConverter x:Key="NullableBoolToBoolConverter"/>
         
         <!-- Modern Button Styles -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
@@ -163,7 +165,7 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             
                             <!-- Фильтрация Group -->
@@ -190,100 +192,90 @@
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
                                         
-                                        <CheckBox Grid.Column="0" Grid.Row="0"
-                                                  Content="Со скидкой" 
-                                                  IsChecked="{Binding HasDiscount, TargetNullValue=False}"
-                                                  Margin="0,0,5,0"/>
+                                        <controls:FilterBadge Grid.Column="0"
+                                                              Label="Со скидкой"
+                                                              IsChecked="{Binding HasDiscount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Count="{Binding DiscountCount}"
+                                                              BackgroundColor="#E8F5E9"
+                                                              BorderColor="#50C850"
+                                                              TextColor="#2E7D32"
+                                                              CountBackgroundColor="#50C850"
+                                                              CountBorderColor="#50C850"
+                                                              CountTextColor="White"
+                                                              Margin="0,0,8,0"/>
                                         
-                                        <CheckBox Grid.Column="1" Grid.Row="0"
-                                                  Content="С подарком" 
-                                                  IsChecked="{Binding HasGift, TargetNullValue=False}"
-                                                  Margin="5,0,5,0"/>
+                                        <controls:FilterBadge Grid.Column="1"
+                                                              Label="С подарком"
+                                                              IsChecked="{Binding HasGift, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Count="{Binding GiftCount}"
+                                                              BackgroundColor="#E8F5E9"
+                                                              BorderColor="#50C850"
+                                                              TextColor="#2E7D32"
+                                                              CountBackgroundColor="#50C850"
+                                                              CountBorderColor="#50C850"
+                                                              CountTextColor="White"
+                                                              Margin="0,0,8,0"/>
                                         
-                                        <CheckBox Grid.Column="2" Grid.Row="0"
-                                                  Content="С ошибками" 
-                                                  IsChecked="{Binding HasError, TargetNullValue=False}"
-                                                  Margin="5,0,5,0"/>
+                                        <controls:FilterBadge Grid.Column="2"
+                                                              Label="С ошибками"
+                                                              IsChecked="{Binding HasError, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Count="{Binding ErrorCount}"
+                                                              BackgroundColor="#FFEBEE"
+                                                              BorderColor="#FF7878"
+                                                              TextColor="#C62828"
+                                                              CountBackgroundColor="#FF7878"
+                                                              CountBorderColor="#FF7878"
+                                                              CountTextColor="White"
+                                                              Margin="0,0,8,0"/>
                                         
-                                        <CheckBox Grid.Column="3" Grid.Row="0"
-                                                  Content="Нет предложений" 
-                                                  IsChecked="{Binding IsPropositionsNotFound, TargetNullValue=False}"
-                                                  Margin="5,0,5,0"/>
+                                        <controls:FilterBadge Grid.Column="3"
+                                                              Label="Нет предложений"
+                                                              IsChecked="{Binding IsPropositionsNotFound, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Count="{Binding NotFoundCount}"
+                                                              BackgroundColor="#FFF3E0"
+                                                              BorderColor="#FFA500"
+                                                              TextColor="#E65100"
+                                                              CountBackgroundColor="#FFA500"
+                                                              CountBorderColor="#FFA500"
+                                                              CountTextColor="White"
+                                                              Margin="0,0,8,0"/>
                                         
-                                        <CheckBox Grid.Column="4" Grid.Row="0"
-                                                  Content="Нет подходящих" 
-                                                  IsChecked="{Binding IsPropositionsNotSuitable, TargetNullValue=False}"
-                                                  Margin="5,0,5,0"/>
+                                        <controls:FilterBadge Grid.Column="4"
+                                                              Label="Нет подходящих"
+                                                              IsChecked="{Binding IsPropositionsNotSuitable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              Count="{Binding NotSuitableCount}"
+                                                              BackgroundColor="#E3F2FD"
+                                                              BorderColor="#7878FF"
+                                                              TextColor="#1565C0"
+                                                              CountBackgroundColor="#7878FF"
+                                                              CountBorderColor="#7878FF"
+                                                              CountTextColor="White"
+                                                              Margin="0,0,8,0"/>
                                         
-                                        <Button Grid.Column="6" Grid.Row="0"
+                                        <Button Grid.Column="6"
                                                 Content="Применить" 
                                                 Command="{Binding ApplyFilterCommand}"
-                                                Margin="5,0,5,0" Padding="10,5"/>
+                                                Margin="8,0,8,0" Padding="10,5"/>
                                         
-                                        <Button Grid.Column="7" Grid.Row="0"
+                                        <Button Grid.Column="7"
                                                 Content="Очистить" 
                                                 Command="{Binding ClearFilterCommand}"
-                                                Margin="5,0" Padding="10,5"/>
-                                        
-                                        <!-- Counters row -->
-                                        <TextBlock Grid.Column="0" Grid.Row="1"
-                                                   Text="{Binding DiscountCount, StringFormat='{}{0}'}"
-                                                   Foreground="#50C850"
-                                                   FontSize="14"
-                                                   FontWeight="Bold"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="0,2,5,0"/>
-                                        
-                                        <TextBlock Grid.Column="1" Grid.Row="1"
-                                                   Text="{Binding GiftCount, StringFormat='{}{0}'}"
-                                                   Foreground="#50C850"
-                                                   FontSize="14"
-                                                   FontWeight="Bold"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="5,2,5,0"/>
-                                        
-                                        <TextBlock Grid.Column="2" Grid.Row="1"
-                                                   Text="{Binding ErrorCount, StringFormat='{}{0}'}"
-                                                   Foreground="#FF7878"
-                                                   FontSize="14"
-                                                   FontWeight="Bold"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="5,2,5,0"/>
-                                        
-                                        <TextBlock Grid.Column="3" Grid.Row="1"
-                                                   Text="{Binding NotFoundCount, StringFormat='{}{0}'}"
-                                                   Foreground="#FFA500"
-                                                   FontSize="14"
-                                                   FontWeight="Bold"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="5,2,5,0"/>
-                                        
-                                        <TextBlock Grid.Column="4" Grid.Row="1"
-                                                   Text="{Binding NotSuitableCount, StringFormat='{}{0}'}"
-                                                   Foreground="#7878FF"
-                                                   FontSize="14"
-                                                   FontWeight="Bold"
-                                                   HorizontalAlignment="Center"
-                                                   Margin="5,2,5,0"/>
+                                                Margin="0,0" Padding="10,5"/>
                                     </Grid>
                                 </StackPanel>
                             </GroupBox>
                             
                             <!-- Параметры отображения Group -->
-                            <GroupBox Grid.Column="1" Header="Параметры отображения" Margin="5,0" Padding="10">
-                                <StackPanel Orientation="Horizontal">
+                            <GroupBox Grid.Column="1" Header="Параметры отображения" Margin="5,0" Padding="8">
+                                <StackPanel Orientation="Vertical">
                                     <CheckBox Content="Реальное время" 
                                               IsChecked="{Binding IsRealtime}"
-                                              Margin="0,0,10,0"/>
+                                              Margin="0,0,0,4"/>
                                     
                                     <CheckBox Content="Использовать цвета" 
                                               IsChecked="{Binding UseColors}"
-                                              Margin="0,0,10,0"/>
+                                              Margin="0,0,0,4"/>
                                     
                                     <CheckBox Content="Все поля" 
                                               IsChecked="{Binding ShowAllFields}"/>
