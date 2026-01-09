@@ -190,41 +190,86 @@
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         
-                                        <CheckBox Grid.Column="0" 
+                                        <CheckBox Grid.Column="0" Grid.Row="0"
                                                   Content="Со скидкой" 
                                                   IsChecked="{Binding HasDiscount, TargetNullValue=False}"
                                                   Margin="0,0,5,0"/>
                                         
-                                        <CheckBox Grid.Column="1" 
+                                        <CheckBox Grid.Column="1" Grid.Row="0"
                                                   Content="С подарком" 
                                                   IsChecked="{Binding HasGift, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
-                                        <CheckBox Grid.Column="2" 
+                                        <CheckBox Grid.Column="2" Grid.Row="0"
                                                   Content="С ошибками" 
                                                   IsChecked="{Binding HasError, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
-                                        <CheckBox Grid.Column="3" 
+                                        <CheckBox Grid.Column="3" Grid.Row="0"
                                                   Content="Нет предложений" 
                                                   IsChecked="{Binding IsPropositionsNotFound, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
-                                        <CheckBox Grid.Column="4" 
+                                        <CheckBox Grid.Column="4" Grid.Row="0"
                                                   Content="Нет подходящих" 
                                                   IsChecked="{Binding IsPropositionsNotSuitable, TargetNullValue=False}"
                                                   Margin="5,0,5,0"/>
                                         
-                                        <Button Grid.Column="6" 
+                                        <Button Grid.Column="6" Grid.Row="0"
                                                 Content="Применить" 
                                                 Command="{Binding ApplyFilterCommand}"
                                                 Margin="5,0,5,0" Padding="10,5"/>
                                         
-                                        <Button Grid.Column="7" 
+                                        <Button Grid.Column="7" Grid.Row="0"
                                                 Content="Очистить" 
                                                 Command="{Binding ClearFilterCommand}"
                                                 Margin="5,0" Padding="10,5"/>
+                                        
+                                        <!-- Counters row -->
+                                        <TextBlock Grid.Column="0" Grid.Row="1"
+                                                   Text="{Binding DiscountCount, StringFormat='{}{0}'}"
+                                                   Foreground="#50C850"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="0,2,5,0"/>
+                                        
+                                        <TextBlock Grid.Column="1" Grid.Row="1"
+                                                   Text="{Binding GiftCount, StringFormat='{}{0}'}"
+                                                   Foreground="#50C850"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="5,2,5,0"/>
+                                        
+                                        <TextBlock Grid.Column="2" Grid.Row="1"
+                                                   Text="{Binding ErrorCount, StringFormat='{}{0}'}"
+                                                   Foreground="#FF7878"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="5,2,5,0"/>
+                                        
+                                        <TextBlock Grid.Column="3" Grid.Row="1"
+                                                   Text="{Binding NotFoundCount, StringFormat='{}{0}'}"
+                                                   Foreground="#FFA500"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="5,2,5,0"/>
+                                        
+                                        <TextBlock Grid.Column="4" Grid.Row="1"
+                                                   Text="{Binding NotSuitableCount, StringFormat='{}{0}'}"
+                                                   Foreground="#7878FF"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   HorizontalAlignment="Center"
+                                                   Margin="5,2,5,0"/>
                                     </Grid>
                                 </StackPanel>
                             </GroupBox>
@@ -548,23 +593,6 @@
                             </StackPanel>
                         </Border>
                         
-                        <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🎁" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#17A2B8"/>
-                                <TextBlock Text="{Binding OffersFoundCount, StringFormat='Найдено: {0}'}" 
-                                         FontSize="13"
-                                         FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                        
-                        <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="⚠" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#DC3545"/>
-                                <TextBlock Text="{Binding ServerErrors, StringFormat='Ошибки: {0}'}" 
-                                         FontSize="13"
-                                         FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
                     </StackPanel>
                 </StackPanel>
                 

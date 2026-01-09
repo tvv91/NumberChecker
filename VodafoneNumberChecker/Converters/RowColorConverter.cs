@@ -34,8 +34,8 @@ namespace VodafoneNumberChecker.Converters
                 if (offer.IsPropositionsNotSuitable)
                     return new SolidColorBrush(Color.FromRgb(120, 120, 255)); // Saturated blue
 
-                // Processed, no propositions - Yellow (more saturated and contrasted)
-                return new SolidColorBrush(Color.FromRgb(255, 255, 100)); // Saturated yellow
+                // Processed, no propositions - Orange (more saturated and contrasted)
+                return new SolidColorBrush(Color.FromRgb(255, 165, 0)); // Orange
             }
 
             return Brushes.Transparent;

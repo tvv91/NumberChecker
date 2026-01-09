@@ -25,6 +25,11 @@ namespace VodafoneNumberChecker.Services
         Task SavePropositionTypeAsync(string title, string content);
         Task<List<PropositionType>> GetPropositionTypesAsync();
         Task<List<PhoneOffer>> GetAllPhoneOffersForExportAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null);
+        Task<int> GetDiscountCountAsync(string? phoneFilter = null);
+        Task<int> GetGiftCountAsync(string? phoneFilter = null);
+        Task<int> GetErrorCountAsync(string? phoneFilter = null);
+        Task<int> GetNotFoundCountAsync(string? phoneFilter = null);
+        Task<int> GetNotSuitableCountAsync(string? phoneFilter = null);
     }
 }
 

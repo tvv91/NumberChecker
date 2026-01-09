@@ -30,6 +30,11 @@ namespace VodafoneNumberChecker.ViewModels
         private bool _useColors;
         private bool _showAllFields;
         private DispatcherTimer? _realtimeTimer;
+        private int _discountCount;
+        private int _giftCount;
+        private int _errorCount;
+        private int _notFoundCount;
+        private int _notSuitableCount;
 
         public PhoneOffersViewModel(IDataService dataService)
         {
@@ -223,6 +228,56 @@ namespace VodafoneNumberChecker.ViewModels
             }
         }
 
+        public int DiscountCount
+        {
+            get => _discountCount;
+            set
+            {
+                _discountCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int GiftCount
+        {
+            get => _giftCount;
+            set
+            {
+                _giftCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int ErrorCount
+        {
+            get => _errorCount;
+            set
+            {
+                _errorCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int NotFoundCount
+        {
+            get => _notFoundCount;
+            set
+            {
+                _notFoundCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int NotSuitableCount
+        {
+            get => _notSuitableCount;
+            set
+            {
+                _notSuitableCount = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ICommand LoadDataCommand { get; }
         public ICommand NextPageCommand { get; }
         public ICommand PreviousPageCommand { get; }
@@ -248,6 +303,13 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 PhoneOffers.Add(offer);
             }
+
+            // Update category counts (respecting phone filter only)
+            DiscountCount = await _dataService.GetDiscountCountAsync(PhoneFilter);
+            GiftCount = await _dataService.GetGiftCountAsync(PhoneFilter);
+            ErrorCount = await _dataService.GetErrorCountAsync(PhoneFilter);
+            NotFoundCount = await _dataService.GetNotFoundCountAsync(PhoneFilter);
+            NotSuitableCount = await _dataService.GetNotSuitableCountAsync(PhoneFilter);
 
             // Update command states
             ((RelayCommand)NextPageCommand).RaiseCanExecuteChanged();

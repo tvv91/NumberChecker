@@ -678,6 +678,71 @@ namespace VodafoneNumberChecker.Services
                 .OrderBy(p => p.Id)
                 .ToListAsync();
         }
+
+        public async Task<int> GetDiscountCountAsync(string? phoneFilter = null)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var query = context.PhoneOffers.AsQueryable();
+            
+            if (!string.IsNullOrWhiteSpace(phoneFilter))
+            {
+                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+            
+            return await query.Where(p => p.DiscountPercent > 0).CountAsync();
+        }
+
+        public async Task<int> GetGiftCountAsync(string? phoneFilter = null)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var query = context.PhoneOffers.AsQueryable();
+            
+            if (!string.IsNullOrWhiteSpace(phoneFilter))
+            {
+                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+            
+            return await query.Where(p => p.GiftAmount > 0).CountAsync();
+        }
+
+        public async Task<int> GetErrorCountAsync(string? phoneFilter = null)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var query = context.PhoneOffers.AsQueryable();
+            
+            if (!string.IsNullOrWhiteSpace(phoneFilter))
+            {
+                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+            
+            return await query.Where(p => p.IsError).CountAsync();
+        }
+
+        public async Task<int> GetNotFoundCountAsync(string? phoneFilter = null)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var query = context.PhoneOffers.AsQueryable();
+            
+            if (!string.IsNullOrWhiteSpace(phoneFilter))
+            {
+                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+            
+            return await query.Where(p => p.IsPropositionsNotFound).CountAsync();
+        }
+
+        public async Task<int> GetNotSuitableCountAsync(string? phoneFilter = null)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var query = context.PhoneOffers.AsQueryable();
+            
+            if (!string.IsNullOrWhiteSpace(phoneFilter))
+            {
+                query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+            
+            return await query.Where(p => p.IsPropositionsNotSuitable).CountAsync();
+        }
     }
 }
 
