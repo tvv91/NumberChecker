@@ -501,105 +501,95 @@
         </Grid>
         <!-- Status Bar -->
         <Border Grid.Row="2" Background="#F8F9FA" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                
-                <!-- Left: Action Buttons -->
-                <StackPanel Grid.Column="0" Orientation="Vertical" Margin="18,12">
-                    <!-- Authentication Status Message -->
-                    <Border Background="#FFF3CD" BorderBrush="#FFC107" BorderThickness="1" CornerRadius="4" 
-                            Padding="10,8" Margin="0,0,0,10" 
-                            Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚠" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Требуется авторизация. Пожалуйста, войдите в систему в WebView." 
-                                     FontSize="13" FontWeight="SemiBold" Foreground="#856404" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-                    
+            <StackPanel Orientation="Vertical" Margin="18,12">
+                <!-- Authentication Status Message -->
+                <Border Background="#FFF3CD" BorderBrush="#FFC107" BorderThickness="1" CornerRadius="4" 
+                        Padding="10,8" Margin="0,0,0,10" 
+                        Visibility="{Binding IsAuthenticated, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <Button Content="Импорт номеров" 
-                                Command="{Binding ImportPhoneNumbersCommand}"
-                                Style="{StaticResource ModernButtonStyle}"
-                                Margin="0,0,8,0"/>
-                        
-                        <Button Content="{Binding ScanButtonText}" 
-                                Command="{Binding StartStopScanCommand}"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Margin="0,0,8,0"/>
-                        
-                        <Button Content="⚙ Config" 
-                                Command="{Binding OpenConfigCommand}"
-                                Style="{StaticResource ModernButtonStyle}"
-                                Margin="0,0,8,0"/>
-                        
-                        <Button x:Name="toggleWebViewButton" 
-                                Content="👁 Скрыть WebView" 
-                                Click="ToggleWebViewButton_Click"
-                                Style="{StaticResource ModernButtonStyle}"
-                                Margin="0,0,8,0"/>
-                        
-                        <Separator Style="{StaticResource ModernSeparatorStyle}" Margin="8,0"/>
-                        
-                        <Button Content="Сбросить все" 
-                                Command="{Binding ResetAllCommand}"
-                                Style="{StaticResource SecondaryButtonStyle}"/>
-                    </StackPanel>
-                </StackPanel>
-                
-                <!-- Center: Statistics -->
-                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center" Margin="12">
-                    <!-- Iteration Info -->
-                    <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0,6,6" 
-                            Visibility="{Binding IterationInfo, Converter={StaticResource StringToVisibilityConverter}}"
-                            Background="#E3F2FD" BorderBrush="#2196F3">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔄" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding IterationInfo}" 
-                                     FontSize="13"
-                                     FontWeight="Bold" VerticalAlignment="Center" Foreground="#1976D2"/>
-                        </StackPanel>
-                    </Border>
-                    
-                    <!-- Statistics Row -->
-                    <StackPanel Orientation="Horizontal">
-                        <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📊" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding TotalNumbers, StringFormat='Всего: {0}'}" 
-                                         FontSize="13"
-                                         FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                        
-                        <Border Style="{StaticResource StatBadgeStyle}" Margin="6,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="✓" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#28A745"/>
-                                <TextBlock Text="{Binding ProcessedCount, StringFormat='Обработано: {0}'}" 
-                                         FontSize="13"
-                                         FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                        
-                    </StackPanel>
-                </StackPanel>
-                
-                <!-- Right: Current Number -->
-                <Border Grid.Column="2" Style="{StaticResource CurrentNumberBadgeStyle}" Margin="18,12">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📱" FontSize="20" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                        <StackPanel>
-                            <TextBlock Text="Текущий номер" FontSize="12" Opacity="0.7" Margin="0,0,0,3"/>
-                            <TextBlock Text="{Binding CurrentNumber}" 
-                                     FontSize="15" FontWeight="Bold" Foreground="#007BFF"/>
-                        </StackPanel>
+                        <TextBlock Text="⚠" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Требуется авторизация. Пожалуйста, войдите в систему в WebView." 
+                                 FontSize="13" FontWeight="SemiBold" Foreground="#856404" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-            </Grid>
+                
+                <!-- Buttons and Statistics in one row -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Button Grid.Column="0"
+                            Content="Импорт номеров" 
+                            Command="{Binding ImportPhoneNumbersCommand}"
+                            Style="{StaticResource ModernButtonStyle}"
+                            Margin="0,0,6,0"/>
+                    
+                    <Button Grid.Column="1"
+                            Content="{Binding ScanButtonText}" 
+                            Command="{Binding StartStopScanCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Margin="0,0,6,0"/>
+                    
+                    <Button Grid.Column="2"
+                            Content="⚙ Config" 
+                            Command="{Binding OpenConfigCommand}"
+                            Style="{StaticResource ModernButtonStyle}"
+                            Margin="0,0,6,0"/>
+                    
+                    <Button Grid.Column="3"
+                            x:Name="toggleWebViewButton" 
+                            Content="👁 Скрыть WebView" 
+                            Click="ToggleWebViewButton_Click"
+                            Style="{StaticResource ModernButtonStyle}"
+                            Margin="0,0,6,0"/>
+                    
+                    <Button Grid.Column="4"
+                            Content="Сбросить все" 
+                            Command="{Binding ResetAllCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,6,0"/>
+                    
+                    <!-- Statistics: Всего -->
+                    <Border Grid.Column="5" Style="{StaticResource StatBadgeStyle}" Margin="6,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📊" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding TotalNumbers, StringFormat='Всего: {0}'}" 
+                                     FontSize="13"
+                                     FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Statistics: Обработано -->
+                    <Border Grid.Column="6" Style="{StaticResource StatBadgeStyle}" Margin="6,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="✓" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#28A745"/>
+                            <TextBlock Text="{Binding ProcessedCount, StringFormat='Обработано: {0}'}" 
+                                     FontSize="13"
+                                     FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Current Number -->
+                    <Border Grid.Column="7" Style="{StaticResource CurrentNumberBadgeStyle}" Margin="6,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📱" FontSize="20" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <StackPanel>
+                                <TextBlock Text="Текущий номер" FontSize="12" Opacity="0.7" Margin="0,0,0,3"/>
+                                <TextBlock Text="{Binding CurrentNumber}" 
+                                         FontSize="15" FontWeight="Bold" Foreground="#007BFF"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
         </Border>
     </Grid>
 </Window>
