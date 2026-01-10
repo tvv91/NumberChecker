@@ -141,26 +141,39 @@ namespace VodafoneNumberChecker.Services
             const offers = [];
 
             for (const panel of panels) {
-                const text = panel.innerText.replace(/\s+/g, ' ').trim();
+                // Get text from panel body to avoid header/button text
+                const panelBody = panel.querySelector('.mat-expansion-panel-body');
+                if (!panelBody) continue;
+                
+                // Get all text from body, excluding buttons
+                const bodyClone = panelBody.cloneNode(true);
+                bodyClone.querySelectorAll('button').forEach(btn => btn.remove());
+                const text = bodyClone.innerText.replace(/\s+/g, ' ').trim();
 
                 const discount = parseInt(text.match(/знижку\s+(\d+)%/i)?.[1] ?? '0');
                 const minTopUp = parseFloat(text.match(/від\s+(\d+)\s*грн/i)?.[1] ?? '0');
                 const gift = parseFloat(text.match(/(\d+)\s*грн на рахунок/i)?.[1] ?? '0');
 
                 let activeDays = 0;
-                const percentDaysMatch = text.match(/треба\s+протягом\s*(\d+)\s*дн/i);
+
+
+                const percentDaysMatch = text.match(/протягом\s+(\d+)\s*дн/i);
                 if (percentDaysMatch) {
                     activeDays = parseInt(percentDaysMatch[1]);
                 } else {
-                    const giftDaysMatch = text.match(/термін їх дії\s*–\s*(\d+)/i);
+
+                    const giftDaysMatch = text.match(/термін їх дії\s*[–-]\s*(\d+)/i);
                     if (giftDaysMatch) {
                         activeDays = parseInt(giftDaysMatch[1]);
                     }
                 }
+                
 
                 const validUntilMatch = text.match(/до\s+(\d{4}-\d{2}-\d{2})/i);
                 const validUntil = validUntilMatch ? validUntilMatch[1] : null;
 
+                // Only add offer if it has at least discount or gift
+                if (discount > 0 || gift > 0 || minTopUp > 0) {
                     offers.push({
                         Discount: discount,
                         MinTopUp: minTopUp,
@@ -168,6 +181,7 @@ namespace VodafoneNumberChecker.Services
                         ActiveDays: activeDays,
                         ValidUntil: validUntil
                     });
+                }
             }
 
             return JSON.stringify({
