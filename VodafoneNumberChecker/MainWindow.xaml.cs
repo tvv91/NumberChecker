@@ -260,5 +260,27 @@ namespace VodafoneNumberChecker
             // Set the column width
             titleColumn.Width = new DataGridLength(maxWidth, DataGridLengthUnitType.Pixel);
         }
+
+        private void PropositionTypesDataGrid_CopyingRowClipboardContent(object sender, DataGridRowClipboardEventArgs e)
+        {
+            if (e.Item is Models.PropositionType propType)
+            {
+                // Clear the default clipboard content
+                e.ClipboardRowContent.Clear();
+                
+                // Replace newlines in Content with spaces to maintain tab-separated structure
+                string formattedContent = (propType.Content ?? string.Empty)
+                    .Replace("\r\n", " ")
+                    .Replace("\n", " ")
+                    .Replace("\r", " ")
+                    .Trim();
+                
+                // Add all columns: ID, Title, Count, Content
+                e.ClipboardRowContent.Add(new DataGridClipboardCellContent(e.Item, propositionTypesDataGrid.Columns[0], propType.Id.ToString()));
+                e.ClipboardRowContent.Add(new DataGridClipboardCellContent(e.Item, propositionTypesDataGrid.Columns[1], propType.Title ?? string.Empty));
+                e.ClipboardRowContent.Add(new DataGridClipboardCellContent(e.Item, propositionTypesDataGrid.Columns[2], propType.Count.ToString()));
+                e.ClipboardRowContent.Add(new DataGridClipboardCellContent(e.Item, propositionTypesDataGrid.Columns[3], formattedContent));
+            }
+        }
     }
 }

@@ -4,8 +4,8 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:converters="clr-namespace:VodafoneNumberChecker.Converters"
         xmlns:controls="clr-namespace:VodafoneNumberChecker.Controls"
-        Title="Vodafone Login" Height="900" Width="1600"
-        MinHeight="600" MinWidth="1200"
+        Title="Vodafone Login" Height="800" Width="1400"
+        MinHeight="600" MinWidth="1000"
         MaxHeight="1080" MaxWidth="1920"
         WindowStartupLocation="CenterScreen"
         WindowState="Normal"
@@ -404,7 +404,8 @@
                               Margin="5"
                               FontSize="12"
                               x:Name="propositionTypesDataGrid"
-                              Loaded="PropositionTypesDataGrid_Loaded">
+                              Loaded="PropositionTypesDataGrid_Loaded"
+                              CopyingRowClipboardContent="PropositionTypesDataGrid_CopyingRowClipboardContent">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
                             <DataGridTemplateColumn Header="Title" MinWidth="200" CanUserResize="True">
