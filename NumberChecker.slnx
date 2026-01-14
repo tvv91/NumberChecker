@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="VodafoneNumberChecker/VodafoneNumberChecker.csproj" />
+  <Project Path="VodafoneNumberCheckerTests/VodafoneNumberCheckerTests.csproj" Id="4c16388d-7794-48a5-8382-557615cf1eb8" />
 </Solution>
