@@ -18,6 +18,7 @@
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
         <converters:NullableBoolToBoolConverter x:Key="NullableBoolToBoolConverter"/>
+        <converters:BoolToYesNoConverter x:Key="BoolToYesNoConverter"/>
         
         <!-- Modern Button Styles -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
@@ -148,11 +149,11 @@
 
         <!-- TabControl for WebView and Data -->
         <TabControl x:Name="tabControl" Grid.Row="0">
-            <TabItem Header="WebView" x:Name="webViewTab">
+            <TabItem Header="Браузер" x:Name="webViewTab">
                 <wv2:WebView2 x:Name="webView"
                               NavigationCompleted="webView_NavigationCompleted"/>
             </TabItem>
-            <TabItem Header="Phone Offers" x:Name="phoneOffersTab">
+            <TabItem Header="Данные" x:Name="phoneOffersTab">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -320,15 +321,15 @@
                             <DataGridTemplateColumn Header="Обработано" Width="100" x:Name="colIsProcessed">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding IsProcessed}"/>
+                                        <TextBlock Text="{Binding IsProcessed, Converter={StaticResource BoolToYesNoConverter}}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="Приоритет" Binding="{Binding IsPriority}" Width="100" CanUserSort="True" SortMemberPath="IsPriority"/>
-                            <DataGridTextColumn Header="Ошибка" Binding="{Binding IsError}" Width="60"/>
+                            <DataGridTextColumn Header="Приоритет" Binding="{Binding IsPriority, Converter={StaticResource BoolToYesNoConverter}}" Width="100" CanUserSort="True" SortMemberPath="IsPriority"/>
+                            <DataGridTextColumn Header="Ошибка" Binding="{Binding IsError, Converter={StaticResource BoolToYesNoConverter}}" Width="60"/>
                             <DataGridTextColumn Header="Описание ошибки" Binding="{Binding ErrorDescription}" Width="200"/>
-                            <DataGridTextColumn Header="Нет предложений" Binding="{Binding IsPropositionsNotFound}" Width="150" x:Name="colIsPropositionsNotFound"/>
-                            <DataGridTextColumn Header="Нет подходящих" Binding="{Binding IsPropositionsNotSuitable}" Width="150" x:Name="colIsPropositionsNotSuitable"/>
+                            <DataGridTextColumn Header="Нет предложений" Binding="{Binding IsPropositionsNotFound, Converter={StaticResource BoolToYesNoConverter}}" Width="150" x:Name="colIsPropositionsNotFound"/>
+                            <DataGridTextColumn Header="Нет подходящих" Binding="{Binding IsPropositionsNotSuitable, Converter={StaticResource BoolToYesNoConverter}}" Width="150" x:Name="colIsPropositionsNotSuitable"/>
                         </DataGrid.Columns>
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">
@@ -382,7 +383,7 @@
                     </Border>
                 </Grid>
             </TabItem>
-            <TabItem Header="Proposition Types" x:Name="propositionTypesTab">
+            <TabItem Header="Типы предложений" x:Name="propositionTypesTab">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -553,7 +554,7 @@
                     
                     <Button Grid.Column="3"
                             x:Name="toggleWebViewButton" 
-                            Content="👁 Скрыть WebView" 
+                            Content="👁 Скрыть браузер" 
                             Click="ToggleWebViewButton_Click"
                             Style="{StaticResource ModernButtonStyle}"
                             Margin="0,0,6,0"/>

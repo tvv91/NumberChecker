@@ -131,7 +131,7 @@ namespace VodafoneNumberChecker
             ToggleWebViewVisibility();
             if (toggleWebViewButton != null)
             {
-                toggleWebViewButton.Content = _isWebViewVisible ? "👁 Скрыть WebView" : "👁 Показать WebView";
+                toggleWebViewButton.Content = _isWebViewVisible ? "👁 Скрыть браузер" : "👁 Показать браузер";
             }
         }
 
