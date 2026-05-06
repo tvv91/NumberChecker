@@ -84,6 +84,18 @@ namespace VodafoneNumberChecker.Services
                     command.CommandText = "ALTER TABLE PhoneOffers ADD COLUMN IsPropositionsNotSuitable INTEGER NOT NULL DEFAULT 0;";
                     await command.ExecuteNonQueryAsync();
                 }
+
+                // Check if IsPriority column exists
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('PhoneOffers') WHERE name='IsPriority';";
+                result = await command.ExecuteScalarAsync();
+                count = Convert.ToInt32(result);
+
+                if (count == 0)
+                {
+                    // IsPriority defaults to 0 for existing and newly imported non-priority numbers
+                    command.CommandText = "ALTER TABLE PhoneOffers ADD COLUMN IsPriority INTEGER NOT NULL DEFAULT 0;";
+                    await command.ExecuteNonQueryAsync();
+                }
                 
                 // Drop CreatedAt and UpdatedAt columns from PropositionTypes if they exist
                 // SQLite 3.35.0+ supports DROP COLUMN, but we'll check version first
@@ -181,7 +193,7 @@ namespace VodafoneNumberChecker.Services
             }
         }
 
-        public async Task<int> ImportPhoneNumberAsync(string phoneNumber)
+        public async Task<int> ImportPhoneNumberAsync(string phoneNumber, bool isPriority = false)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -206,7 +218,8 @@ namespace VodafoneNumberChecker.Services
                 ValidUntil = null,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = null,
-                IsProcessed = false
+                IsProcessed = false,
+                IsPriority = isPriority
             };
             
             context.PhoneOffers.Add(phoneOffer);
@@ -214,7 +227,7 @@ namespace VodafoneNumberChecker.Services
             return phoneOffer.Id;
         }
 
-        public async Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers, Action<int, int, string?>? progressCallback = null)
+        public async Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers, bool isPriority = false, Action<int, int, string?>? progressCallback = null)
         {
             // Clear all existing phone offers first
             await ClearAllPhoneOffersAsync();
@@ -227,7 +240,7 @@ namespace VodafoneNumberChecker.Services
                 var phoneNumber = phoneNumbers[i];
                 try
                 {
-                    await ImportPhoneNumberAsync(phoneNumber);
+                    await ImportPhoneNumberAsync(phoneNumber, isPriority);
                     importedCount++;
                 }
                 catch

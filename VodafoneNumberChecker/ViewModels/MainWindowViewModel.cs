@@ -274,7 +274,7 @@ namespace VodafoneNumberChecker.ViewModels
                             try
                             {
                                 // Import phone numbers to database with default states
-                                importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers, 
+                                importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers, isPriorityImport,
                                     (current, total, currentNumber) =>
                                     {
                                         // Update progress on UI thread

@@ -22,6 +22,7 @@ namespace VodafoneNumberChecker.Models
         public DateTime? UpdatedAt { get; set; }                    // дата последнего обновления
 
         public bool IsProcessed { get; set; } = false;             // обработан ли локально
+        public bool IsPriority { get; set; } = false;              // приоритетный номер при импорте
         public bool IsError { get; set; } = false;                 // есть ли ошибка при обработке
         public string? ErrorDescription { get; set; }              // описание ошибки
         public int IterationCount { get; set; } = 0;                // количество итераций обработки

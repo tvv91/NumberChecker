@@ -5,8 +5,8 @@ namespace VodafoneNumberChecker.Services
     public interface IDataService
     {
         Task<int> SavePhoneOfferAsync(string phoneNumber, Offer offer, bool isPropositionsNotFound = false, bool isPropositionsNotSuitable = false);
-        Task<int> ImportPhoneNumberAsync(string phoneNumber);
-        Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers, Action<int, int, string?>? progressCallback = null);
+        Task<int> ImportPhoneNumberAsync(string phoneNumber, bool isPriority = false);
+        Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers, bool isPriority = false, Action<int, int, string?>? progressCallback = null);
         Task<int?> GetLastProcessedPhoneIdAsync();
         Task SetLastProcessedPhoneIdAsync(int? phoneId);
         Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null);

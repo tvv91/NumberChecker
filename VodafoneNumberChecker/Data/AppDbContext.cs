@@ -20,6 +20,7 @@ namespace VodafoneNumberChecker.Data
                 entity.HasIndex(e => e.PhoneNumber).IsUnique();
                 entity.HasIndex(e => e.CreatedAt);
                 entity.HasIndex(e => e.ValidUntil);
+                entity.Property(e => e.IsPriority).HasDefaultValue(false);
             });
 
             // Configure SyncState - ensure only one record exists
