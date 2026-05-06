@@ -5,6 +5,8 @@ namespace VodafoneNumberChecker.Services
 {
     public class WebViewService : IWebViewService
     {
+        private const string AuthenticatedDashboardPath = "/dashboard/personal-offers-main/personal-offers";
+
         public WebView2? WebView { get; set; }
         public string? CurrentUrl { get; private set; }
         public event EventHandler<string>? NavigationCompleted;
@@ -23,6 +25,16 @@ namespace VodafoneNumberChecker.Services
                 {
                     CurrentUrl = WebView.CoreWebView2.Source;
                     NavigationCompleted?.Invoke(this, CurrentUrl);
+                };
+
+                WebView.CoreWebView2.SourceChanged += (sender, e) =>
+                {
+                    CurrentUrl = WebView.CoreWebView2.Source;
+
+                    if (!e.IsNewDocument)
+                    {
+                        NavigationCompleted?.Invoke(this, CurrentUrl);
+                    }
                 };
             }
         }
@@ -306,25 +318,9 @@ namespace VodafoneNumberChecker.Services
             if (string.IsNullOrEmpty(CurrentUrl))
                 return false;
 
-            // If URL contains /dashboard/personal-offers-main/personal-offers, we're authenticated
-            // If URL is just https://partner.vodafone.ua (without /dashboard), we're not authenticated
-            bool isAuthenticated = CurrentUrl.Contains("/dashboard/personal-offers-main/personal-offers");
-            
-            // Also check if the phone number input field exists (indicates authenticated dashboard)
-            if (!isAuthenticated)
-            {
-                try
-                {
-                    string hasPhoneField = await WebView.CoreWebView2.ExecuteScriptAsync(@"document.querySelector('#phoneNumber') ? '1' : '0';");
-                    isAuthenticated = hasPhoneField.Contains("1");
-                }
-                catch
-                {
-                    // If script fails, assume not authenticated
-                }
-            }
-
-            return isAuthenticated;
+            // If URL contains /dashboard/personal-offers-main/personal-offers, we're authenticated.
+            // If Vodafone redirects to the login/phone page, the URL will not contain this path.
+            return CurrentUrl.Contains(AuthenticatedDashboardPath, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
