@@ -448,7 +448,7 @@ namespace VodafoneNumberChecker.ViewModels
                     worksheet.Cells[1, 8].Value = "Создано";
                     worksheet.Cells[1, 9].Value = "Обновлено";
                     worksheet.Cells[1, 10].Value = "Итераций";
-                    worksheet.Cells[1, 11].Value = "IsProcessed";
+                    worksheet.Cells[1, 11].Value = "Обработано";
                     worksheet.Cells[1, 12].Value = "Ошибка";
                     worksheet.Cells[1, 13].Value = "Описание ошибки";
                     worksheet.Cells[1, 14].Value = "Нет предложений";
