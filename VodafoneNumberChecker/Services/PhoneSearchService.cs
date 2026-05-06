@@ -3,19 +3,12 @@ using VodafoneNumberChecker.Models;
 
 namespace VodafoneNumberChecker.Services
 {
-    public class PhoneSearchService : IPhoneSearchService
+    public class PhoneSearchService(IWebViewService webViewService, IDataService dataService, ILoggerService logger) : IPhoneSearchService
     {
-        private readonly IWebViewService _webViewService;
-        private readonly IDataService _dataService;
-        private readonly ILoggerService _logger;
+        private readonly IWebViewService _webViewService = webViewService;
+        private readonly IDataService _dataService = dataService;
+        private readonly ILoggerService _logger = logger;
         private readonly Random _rand = new();
-
-        public PhoneSearchService(IWebViewService webViewService, IDataService dataService, ILoggerService logger)
-        {
-            _webViewService = webViewService;
-            _dataService = dataService;
-            _logger = logger;
-        }
 
         public async Task ProcessPhoneNumberAsync(
             string phoneNumber,

@@ -1,0 +1,14 @@
+---
+description: C# coding standards for this project
+globs: **/*.cs
+alwaysApply: false
+---
+
+# C# Coding Standards
+
+- Always use primary constructors for new classes where the language and framework allow it.
+- Keep each class and interface in its own separate file.
+- Prefer current .NET 10 and C# language features when implementing new code.
+- Favor performant implementations, especially in hot paths, loops, IO, parsing, and database access.
+- Apply SOLID and DRY principles where they improve clarity and maintainability.
+- Add comments that explain what non-obvious code does and why it exists.

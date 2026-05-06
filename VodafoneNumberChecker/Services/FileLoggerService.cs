@@ -4,12 +4,12 @@ using System.Threading.Tasks;
 
 namespace VodafoneNumberChecker.Services
 {
-    public class FileLoggerService : ILoggerService
+    public class FileLoggerService() : ILoggerService
     {
-        private readonly string _logFilePath;
+        private readonly string _logFilePath = CreateLogFilePath();
         private readonly object _lockObject = new object();
 
-        public FileLoggerService()
+        private static string CreateLogFilePath()
         {
             var logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
             if (!Directory.Exists(logDirectory))
@@ -18,7 +18,7 @@ namespace VodafoneNumberChecker.Services
             }
 
             var logFileName = $"app_{DateTime.Now:yyyy-MM-dd}.log";
-            _logFilePath = Path.Combine(logDirectory, logFileName);
+            return Path.Combine(logDirectory, logFileName);
         }
 
         public void LogInfo(string message)

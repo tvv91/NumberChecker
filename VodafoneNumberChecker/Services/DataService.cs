@@ -4,14 +4,9 @@ using VodafoneNumberChecker.Models;
 
 namespace VodafoneNumberChecker.Services
 {
-    public class DataService : IDataService
+    public class DataService(IDbContextFactory<AppDbContext> dbContextFactory) : IDataService
     {
-        private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
-
-        public DataService(IDbContextFactory<AppDbContext> dbContextFactory)
-        {
-            _dbContextFactory = dbContextFactory;
-        }
+        private readonly IDbContextFactory<AppDbContext> _dbContextFactory = dbContextFactory;
 
         public async Task EnsureDatabaseCreatedAsync()
         {
