@@ -234,7 +234,19 @@ namespace VodafoneNumberChecker.ViewModels
                 {
                     try
                     {
-                        _logger.LogInfo($"Starting import from file: {dialog.FileName}");
+                        var importOptionsWindow = new ImportOptionsWindow
+                        {
+                            Owner = System.Windows.Application.Current.MainWindow
+                        };
+
+                        if (importOptionsWindow.ShowDialog() != true)
+                        {
+                            return;
+                        }
+
+                        bool isPriorityImport = importOptionsWindow.IsPriority;
+
+                        _logger.LogInfo($"Starting import from file: {dialog.FileName}. Priority: {isPriorityImport}");
                         _phoneNumbers = _fileService.ReadPhoneNumbers(dialog.FileName);
                         
                         if (_phoneNumbers.Count == 0)
