@@ -320,6 +320,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="IsPriority" Binding="{Binding IsPriority}" Width="100" CanUserSort="True" SortMemberPath="IsPriority"/>
                             <DataGridTextColumn Header="Ошибка" Binding="{Binding IsError}" Width="60"/>
                             <DataGridTextColumn Header="Описание ошибки" Binding="{Binding ErrorDescription}" Width="200"/>
                             <DataGridTextColumn Header="Нет предложений" Binding="{Binding IsPropositionsNotFound}" Width="150" x:Name="colIsPropositionsNotFound"/>
