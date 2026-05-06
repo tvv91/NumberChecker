@@ -9,8 +9,8 @@ namespace VodafoneNumberChecker.Services
         Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers, bool isPriority = false, Action<int, int, string?>? progressCallback = null);
         Task<int?> GetLastProcessedPhoneIdAsync();
         Task SetLastProcessedPhoneIdAsync(int? phoneId);
-        Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null);
-        Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null);
+        Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null, bool? isPriority = null);
+        Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null, bool? isPriority = null);
         Task<List<PhoneOffer>> GetUnprocessedPhoneOffersAsync();
         Task<List<PhoneOffer>> GetEmptyPropositionsAsync();
         Task<List<PhoneOffer>> GetErrorNumbersAsync();
@@ -24,12 +24,12 @@ namespace VodafoneNumberChecker.Services
         Task EnsureDatabaseCreatedAsync();
         Task SavePropositionTypeAsync(string title, string content);
         Task<List<PropositionType>> GetPropositionTypesAsync();
-        Task<List<PhoneOffer>> GetAllPhoneOffersForExportAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null);
-        Task<int> GetDiscountCountAsync(string? phoneFilter = null);
-        Task<int> GetGiftCountAsync(string? phoneFilter = null);
-        Task<int> GetErrorCountAsync(string? phoneFilter = null);
-        Task<int> GetNotFoundCountAsync(string? phoneFilter = null);
-        Task<int> GetNotSuitableCountAsync(string? phoneFilter = null);
+        Task<List<PhoneOffer>> GetAllPhoneOffersForExportAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null, bool? isPriority = null);
+        Task<int> GetDiscountCountAsync(string? phoneFilter = null, bool? isPriority = null);
+        Task<int> GetGiftCountAsync(string? phoneFilter = null, bool? isPriority = null);
+        Task<int> GetErrorCountAsync(string? phoneFilter = null, bool? isPriority = null);
+        Task<int> GetNotFoundCountAsync(string? phoneFilter = null, bool? isPriority = null);
+        Task<int> GetNotSuitableCountAsync(string? phoneFilter = null, bool? isPriority = null);
     }
 }
 

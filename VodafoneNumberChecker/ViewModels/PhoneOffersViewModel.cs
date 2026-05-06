@@ -30,6 +30,7 @@ namespace VodafoneNumberChecker.ViewModels
         private bool _isRealtime;
         private bool _useColors;
         private bool _showAllFields;
+        private bool _isPriorityOnly;
         private DispatcherTimer? _realtimeTimer;
         private DispatcherTimer? _filterDebounceTimer;
         private int _discountCount;
@@ -55,6 +56,7 @@ namespace VodafoneNumberChecker.ViewModels
                 HasError = null; 
                 IsPropositionsNotFound = null; 
                 IsPropositionsNotSuitable = null; 
+                IsPriorityOnly = false;
                 CurrentPage = 1; 
                 await LoadDataAsync(); 
             });
@@ -278,6 +280,24 @@ namespace VodafoneNumberChecker.ViewModels
             }
         }
 
+        public bool IsPriorityOnly
+        {
+            get => _isPriorityOnly;
+            set
+            {
+                if (_isPriorityOnly != value)
+                {
+                    _isPriorityOnly = value;
+                    OnPropertyChanged();
+                    // Auto-apply this display filter only if real-time is enabled.
+                    if (_isRealtime)
+                    {
+                        DebounceFilterApply();
+                    }
+                }
+            }
+        }
+
         public int DiscountCount
         {
             get => _discountCount;
@@ -339,14 +359,16 @@ namespace VodafoneNumberChecker.ViewModels
 
         public async Task LoadDataAsync()
         {
-            TotalCount = await _dataService.GetPhoneOffersCountAsync(PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable);
+            bool? isPriority = IsPriorityOnly ? true : null;
+
+            TotalCount = await _dataService.GetPhoneOffersCountAsync(PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable, isPriority);
             TotalPages = (int)Math.Ceiling(TotalCount / (double)PageSize);
 
             if (CurrentPage > TotalPages && TotalPages > 0)
                 CurrentPage = TotalPages;
 
             var skip = (CurrentPage - 1) * PageSize;
-            var offers = await _dataService.GetPhoneOffersAsync(skip, PageSize, PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable);
+            var offers = await _dataService.GetPhoneOffersAsync(skip, PageSize, PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable, isPriority);
             
             PhoneOffers.Clear();
             foreach (var offer in offers)
@@ -354,12 +376,12 @@ namespace VodafoneNumberChecker.ViewModels
                 PhoneOffers.Add(offer);
             }
 
-            // Update category counts (respecting phone filter only)
-            DiscountCount = await _dataService.GetDiscountCountAsync(PhoneFilter);
-            GiftCount = await _dataService.GetGiftCountAsync(PhoneFilter);
-            ErrorCount = await _dataService.GetErrorCountAsync(PhoneFilter);
-            NotFoundCount = await _dataService.GetNotFoundCountAsync(PhoneFilter);
-            NotSuitableCount = await _dataService.GetNotSuitableCountAsync(PhoneFilter);
+            // Update category counts, narrowed to priority numbers when requested.
+            DiscountCount = await _dataService.GetDiscountCountAsync(PhoneFilter, isPriority);
+            GiftCount = await _dataService.GetGiftCountAsync(PhoneFilter, isPriority);
+            ErrorCount = await _dataService.GetErrorCountAsync(PhoneFilter, isPriority);
+            NotFoundCount = await _dataService.GetNotFoundCountAsync(PhoneFilter, isPriority);
+            NotSuitableCount = await _dataService.GetNotSuitableCountAsync(PhoneFilter, isPriority);
 
             // Update command states
             ((RelayCommand)NextPageCommand).RaiseCanExecuteChanged();
@@ -428,8 +450,9 @@ namespace VodafoneNumberChecker.ViewModels
                 if (saveFileDialog.ShowDialog() == true)
                 {
                     // Get all filtered data (without pagination)
+                    bool? isPriority = IsPriorityOnly ? true : null;
                     var allOffers = await _dataService.GetAllPhoneOffersForExportAsync(
-                        PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable);
+                        PhoneFilter, HasDiscount, HasGift, null, HasError, IsPropositionsNotFound, IsPropositionsNotSuitable, isPriority);
 
                     // Set license context for EPPlus (non-commercial use)
                     ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;

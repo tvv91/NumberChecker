@@ -276,6 +276,10 @@
                                     <CheckBox Content="Использовать цвета" 
                                               IsChecked="{Binding UseColors}"
                                               Margin="0,0,0,4"/>
+
+                                    <CheckBox Content="Приоритетные" 
+                                              IsChecked="{Binding IsPriorityOnly}"
+                                              Margin="0,0,0,4"/>
                                     
                                     <CheckBox Content="Все поля" 
                                               IsChecked="{Binding ShowAllFields}"/>

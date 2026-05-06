@@ -450,7 +450,7 @@ namespace VodafoneNumberChecker.Services
             await context.SaveChangesAsync();
         }
 
-        public async Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null)
+        public async Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null, bool? isPriority = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -460,6 +460,11 @@ namespace VodafoneNumberChecker.Services
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+
+            if (isPriority.HasValue)
+            {
+                query = query.Where(p => p.IsPriority == isPriority.Value);
             }
 
             // Build OR conditions for all checked positive filters
@@ -518,7 +523,7 @@ namespace VodafoneNumberChecker.Services
                 .ToListAsync();
         }
 
-        public async Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null)
+        public async Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null, bool? isPriority = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -528,6 +533,11 @@ namespace VodafoneNumberChecker.Services
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+
+            if (isPriority.HasValue)
+            {
+                query = query.Where(p => p.IsPriority == isPriority.Value);
             }
 
             // Build OR conditions for all checked positive filters
@@ -621,7 +631,7 @@ namespace VodafoneNumberChecker.Services
                 .ToListAsync();
         }
 
-        public async Task<List<PhoneOffer>> GetAllPhoneOffersForExportAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null)
+        public async Task<List<PhoneOffer>> GetAllPhoneOffersForExportAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null, bool? isPriority = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -631,6 +641,11 @@ namespace VodafoneNumberChecker.Services
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+
+            if (isPriority.HasValue)
+            {
+                query = query.Where(p => p.IsPriority == isPriority.Value);
             }
 
             // Build OR conditions for all checked positive filters
@@ -687,7 +702,7 @@ namespace VodafoneNumberChecker.Services
                 .ToListAsync();
         }
 
-        public async Task<int> GetDiscountCountAsync(string? phoneFilter = null)
+        public async Task<int> GetDiscountCountAsync(string? phoneFilter = null, bool? isPriority = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             var query = context.PhoneOffers.AsQueryable();
@@ -695,12 +710,17 @@ namespace VodafoneNumberChecker.Services
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+
+            if (isPriority.HasValue)
+            {
+                query = query.Where(p => p.IsPriority == isPriority.Value);
             }
             
             return await query.Where(p => p.DiscountPercent > 0).CountAsync();
         }
 
-        public async Task<int> GetGiftCountAsync(string? phoneFilter = null)
+        public async Task<int> GetGiftCountAsync(string? phoneFilter = null, bool? isPriority = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             var query = context.PhoneOffers.AsQueryable();
@@ -708,12 +728,17 @@ namespace VodafoneNumberChecker.Services
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+
+            if (isPriority.HasValue)
+            {
+                query = query.Where(p => p.IsPriority == isPriority.Value);
             }
             
             return await query.Where(p => p.GiftAmount > 0).CountAsync();
         }
 
-        public async Task<int> GetErrorCountAsync(string? phoneFilter = null)
+        public async Task<int> GetErrorCountAsync(string? phoneFilter = null, bool? isPriority = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             var query = context.PhoneOffers.AsQueryable();
@@ -721,12 +746,17 @@ namespace VodafoneNumberChecker.Services
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+
+            if (isPriority.HasValue)
+            {
+                query = query.Where(p => p.IsPriority == isPriority.Value);
             }
             
             return await query.Where(p => p.IsError).CountAsync();
         }
 
-        public async Task<int> GetNotFoundCountAsync(string? phoneFilter = null)
+        public async Task<int> GetNotFoundCountAsync(string? phoneFilter = null, bool? isPriority = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             var query = context.PhoneOffers.AsQueryable();
@@ -735,11 +765,16 @@ namespace VodafoneNumberChecker.Services
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
             }
+
+            if (isPriority.HasValue)
+            {
+                query = query.Where(p => p.IsPriority == isPriority.Value);
+            }
             
             return await query.Where(p => p.IsPropositionsNotFound).CountAsync();
         }
 
-        public async Task<int> GetNotSuitableCountAsync(string? phoneFilter = null)
+        public async Task<int> GetNotSuitableCountAsync(string? phoneFilter = null, bool? isPriority = null)
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
             var query = context.PhoneOffers.AsQueryable();
@@ -747,6 +782,11 @@ namespace VodafoneNumberChecker.Services
             if (!string.IsNullOrWhiteSpace(phoneFilter))
             {
                 query = query.Where(p => p.PhoneNumber.Contains(phoneFilter));
+            }
+
+            if (isPriority.HasValue)
+            {
+                query = query.Where(p => p.IsPriority == isPriority.Value);
             }
             
             return await query.Where(p => p.IsPropositionsNotSuitable).CountAsync();
