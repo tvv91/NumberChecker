@@ -14,10 +14,8 @@
     <Window.Resources>
         <converters:RowColorConverter x:Key="RowColorConverter"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <converters:ColumnWidthConverter x:Key="ColumnWidthConverter"/>
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
-        <converters:NullableBoolToBoolConverter x:Key="NullableBoolToBoolConverter"/>
         <converters:BoolToYesNoConverter x:Key="BoolToYesNoConverter"/>
         
         <!-- Modern Button Styles -->
