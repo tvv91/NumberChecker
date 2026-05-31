@@ -10,6 +10,7 @@ namespace VodafoneNumberChecker.Models
         public double DelayNextMax { get; set; } = 5;
         public int EmptyPropositionsRepeats { get; set; } = 0;
         public int ErrorNumbersRepeats { get; set; } = 0;
+        public bool Is24x7Mode { get; set; } = false;
     }
 }
 

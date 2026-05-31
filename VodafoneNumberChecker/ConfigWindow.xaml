@@ -60,7 +60,8 @@
             </Grid.ColumnDefinitions>
 
             <!-- Empty Propositions Repeats -->
-            <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="8,0">
+            <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="8,0"
+                        IsEnabled="{Binding AreIterationSlidersEnabled}">
                 <TextBlock Text="Количество циклов" HorizontalAlignment="Center" FontSize="11" Margin="0,0,0,4"/>
                 <Slider Minimum="0" Maximum="10" Value="{Binding EmptyPropositionsRepeats, Mode=TwoWay}" TickFrequency="1" IsSnapToTickEnabled="True" Height="20"/>
                 <TextBlock Text="{Binding EmptyPropositionsRepeats, StringFormat='{}{0}'}" HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="11"/>
@@ -69,7 +70,8 @@
             </StackPanel>
 
             <!-- Error Numbers Repeats -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="8,0">
+            <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="8,0"
+                        IsEnabled="{Binding AreIterationSlidersEnabled}">
                 <TextBlock Text="Количество циклов" HorizontalAlignment="Center" FontSize="11" Margin="0,0,0,4"/>
                 <Slider Minimum="0" Maximum="10" Value="{Binding ErrorNumbersRepeats, Mode=TwoWay}" TickFrequency="1" IsSnapToTickEnabled="True" Height="20"/>
                 <TextBlock Text="{Binding ErrorNumbersRepeats, StringFormat='{}{0}'}" HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="11"/>
@@ -80,6 +82,10 @@
 
         <!-- Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <CheckBox Content="Работать 24/7"
+                      IsChecked="{Binding Is24x7Mode, Mode=TwoWay}"
+                      VerticalAlignment="Center"
+                      Margin="0,0,20,0"/>
             <Button Content="OK" Width="100" Height="30" Margin="5,0" Click="OkButton_Click"/>
             <Button Content="Отмена" Width="100" Height="30" Margin="5,0" Click="CancelButton_Click"/>
         </StackPanel>
