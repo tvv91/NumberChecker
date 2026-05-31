@@ -82,6 +82,10 @@
 
         <!-- Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <CheckBox Content="Пополнять номера"
+                      IsChecked="{Binding ShouldTopUpNumbers, Mode=TwoWay}"
+                      VerticalAlignment="Center"
+                      Margin="0,0,20,0"/>
             <CheckBox Content="Работать 24/7"
                       IsChecked="{Binding Is24x7Mode, Mode=TwoWay}"
                       VerticalAlignment="Center"

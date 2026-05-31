@@ -15,6 +15,7 @@ namespace VodafoneNumberChecker.ViewModels
         private int _emptyPropositionsRepeats = 0;
         private int _errorNumbersRepeats = 0;
         private bool _is24x7Mode;
+        private bool _shouldTopUpNumbers;
 
         public double DelayInputMin
         {
@@ -114,6 +115,21 @@ namespace VodafoneNumberChecker.ViewModels
 
         public bool AreIterationSlidersEnabled => !Is24x7Mode;
 
+        public bool ShouldTopUpNumbers
+        {
+            get => _shouldTopUpNumbers;
+            set
+            {
+                if (_shouldTopUpNumbers == value)
+                {
+                    return;
+                }
+
+                _shouldTopUpNumbers = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ProcessingConfiguration GetConfiguration()
         {
             return new ProcessingConfiguration
@@ -126,7 +142,8 @@ namespace VodafoneNumberChecker.ViewModels
                 DelayNextMax = DelayNextMax,
                 EmptyPropositionsRepeats = EmptyPropositionsRepeats,
                 ErrorNumbersRepeats = ErrorNumbersRepeats,
-                Is24x7Mode = Is24x7Mode
+                Is24x7Mode = Is24x7Mode,
+                ShouldTopUpNumbers = ShouldTopUpNumbers
             };
         }
 
@@ -141,6 +158,7 @@ namespace VodafoneNumberChecker.ViewModels
             EmptyPropositionsRepeats = config.EmptyPropositionsRepeats;
             ErrorNumbersRepeats = config.ErrorNumbersRepeats;
             Is24x7Mode = config.Is24x7Mode;
+            ShouldTopUpNumbers = config.ShouldTopUpNumbers;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
