@@ -1,10 +1,11 @@
 <Window x:Class="VodafoneNumberChecker.ConfigWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Настройки" Height="350" Width="650"
+        Title="Настройки" Height="420" Width="650"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="15">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -80,8 +81,18 @@
             </StackPanel>
         </Grid>
 
+        <!-- First pass time estimate -->
+        <Border Grid.Row="2" Margin="8,14,8,0" Padding="10" Background="#F5F8FF" BorderBrush="#D8E6FF" BorderThickness="1" CornerRadius="6">
+            <StackPanel>
+                <TextBlock Text="Оценка времени первого прохода" FontWeight="Bold" FontSize="12"/>
+                <TextBlock Text="{Binding PhoneNumbersCount, StringFormat='Номеров в базе: {0}'}" Margin="0,4,0,0" FontSize="11"/>
+                <TextBlock Text="{Binding EstimatedAverageFirstPassDuration, StringFormat='Приблизительно: {0}'}" Margin="0,4,0,0" FontSize="11"/>
+                <TextBlock Text="{Binding EstimatedMaxFirstPassDuration, StringFormat='Максимум: {0}'}" Margin="0,2,0,0" FontSize="11"/>
+            </StackPanel>
+        </Border>
+
         <!-- Buttons -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
             <CheckBox Content="Пополнять номера"
                       IsChecked="{Binding ShouldTopUpNumbers, Mode=TwoWay}"
                       VerticalAlignment="Center"

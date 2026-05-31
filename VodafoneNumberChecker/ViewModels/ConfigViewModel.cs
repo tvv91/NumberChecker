@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using VodafoneNumberChecker.Models;
+using VodafoneNumberChecker.Services;
 
 namespace VodafoneNumberChecker.ViewModels
 {
@@ -16,6 +17,7 @@ namespace VodafoneNumberChecker.ViewModels
         private int _errorNumbersRepeats = 0;
         private bool _is24x7Mode;
         private bool _shouldTopUpNumbers;
+        private int _phoneNumbersCount;
 
         public double DelayInputMin
         {
@@ -24,6 +26,7 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 _delayInputMin = value;
                 OnPropertyChanged();
+                NotifyTimeEstimateChanged();
             }
         }
 
@@ -34,6 +37,7 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 _delayInputMax = value;
                 OnPropertyChanged();
+                NotifyTimeEstimateChanged();
             }
         }
 
@@ -44,6 +48,7 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 _delaySearchMin = value;
                 OnPropertyChanged();
+                NotifyTimeEstimateChanged();
             }
         }
 
@@ -54,6 +59,7 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 _delaySearchMax = value;
                 OnPropertyChanged();
+                NotifyTimeEstimateChanged();
             }
         }
 
@@ -64,6 +70,7 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 _delayNextMin = value;
                 OnPropertyChanged();
+                NotifyTimeEstimateChanged();
             }
         }
 
@@ -74,6 +81,7 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 _delayNextMax = value;
                 OnPropertyChanged();
+                NotifyTimeEstimateChanged();
             }
         }
 
@@ -115,6 +123,22 @@ namespace VodafoneNumberChecker.ViewModels
 
         public bool AreIterationSlidersEnabled => !Is24x7Mode;
 
+        public int PhoneNumbersCount
+        {
+            get => _phoneNumbersCount;
+            private set
+            {
+                if (_phoneNumbersCount == value)
+                {
+                    return;
+                }
+
+                _phoneNumbersCount = value;
+                OnPropertyChanged();
+                NotifyTimeEstimateChanged();
+            }
+        }
+
         public bool ShouldTopUpNumbers
         {
             get => _shouldTopUpNumbers;
@@ -128,6 +152,15 @@ namespace VodafoneNumberChecker.ViewModels
                 _shouldTopUpNumbers = value;
                 OnPropertyChanged();
             }
+        }
+
+        public string EstimatedAverageFirstPassDuration => FormatDuration(GetAverageFirstPassSeconds());
+
+        public string EstimatedMaxFirstPassDuration => FormatDuration(GetMaxFirstPassSeconds());
+
+        public async Task RefreshPhoneNumbersCountAsync(IDataService dataService)
+        {
+            PhoneNumbersCount = await dataService.GetPhoneOffersCountAsync();
         }
 
         public ProcessingConfiguration GetConfiguration()
@@ -166,6 +199,45 @@ namespace VodafoneNumberChecker.ViewModels
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void NotifyTimeEstimateChanged()
+        {
+            OnPropertyChanged(nameof(EstimatedAverageFirstPassDuration));
+            OnPropertyChanged(nameof(EstimatedMaxFirstPassDuration));
+        }
+
+        private double GetAverageFirstPassSeconds()
+        {
+            var inputAverage = (Math.Min(DelayInputMin, DelayInputMax) + Math.Max(DelayInputMin, DelayInputMax)) / 2.0;
+            var searchAverage = (Math.Min(DelaySearchMin, DelaySearchMax) + Math.Max(DelaySearchMin, DelaySearchMax)) / 2.0;
+            var nextAverage = (Math.Min(DelayNextMin, DelayNextMax) + Math.Max(DelayNextMin, DelayNextMax)) / 2.0;
+            return PhoneNumbersCount * (inputAverage + searchAverage + nextAverage);
+        }
+
+        private double GetMaxFirstPassSeconds()
+        {
+            var inputMax = Math.Max(DelayInputMin, DelayInputMax);
+            var searchMax = Math.Max(DelaySearchMin, DelaySearchMax);
+            var nextMax = Math.Max(DelayNextMin, DelayNextMax);
+            return PhoneNumbersCount * (inputMax + searchMax + nextMax);
+        }
+
+        private static string FormatDuration(double totalSeconds)
+        {
+            var duration = TimeSpan.FromSeconds(Math.Max(0, Math.Ceiling(totalSeconds)));
+
+            if (duration.TotalHours >= 1)
+            {
+                return $"{(int)duration.TotalHours} ч {duration.Minutes} мин {duration.Seconds} сек";
+            }
+
+            if (duration.TotalMinutes >= 1)
+            {
+                return $"{duration.Minutes} мин {duration.Seconds} сек";
+            }
+
+            return $"{duration.Seconds} сек";
         }
     }
 }

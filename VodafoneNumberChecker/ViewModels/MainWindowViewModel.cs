@@ -577,10 +577,11 @@ namespace VodafoneNumberChecker.ViewModels
             }
         }
 
-        private void OpenConfig()
+        private async void OpenConfig()
         {
             try
             {
+                await _configViewModel.RefreshPhoneNumbersCountAsync(_dataService);
                 var configWindow = new ConfigWindow(_configViewModel);
                 configWindow.Owner = System.Windows.Application.Current.MainWindow;
                 configWindow.ShowDialog();
