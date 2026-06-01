@@ -61,24 +61,26 @@ namespace VodafoneNumberChecker
             }
         }
 
-        public void UpdateProgress(int current, int total, string? currentNumber = null)
+        public void UpdateProgress(int current, int total, string? currentNumber = null, string? operationLabel = null)
         {
             if (total > 0)
             {
                 Progress = (current * 100.0) / total;
                 ProgressText = $"{current} из {total}";
+
+                var operation = string.IsNullOrWhiteSpace(operationLabel) ? "Импорт номера" : operationLabel;
                 
                 if (current < total && !string.IsNullOrEmpty(currentNumber))
                 {
-                    StatusText = $"Импорт номера: {currentNumber}";
+                    StatusText = $"{operation}: {currentNumber}";
                 }
                 else if (current == total)
                 {
-                    StatusText = $"Импорт завершен: {current} из {total} номеров";
+                    StatusText = $"{operation} завершен: {current} из {total}";
                 }
                 else
                 {
-                    StatusText = $"Импортировано {current} из {total} номеров";
+                    StatusText = $"{operation}: {current} из {total}";
                 }
             }
         }

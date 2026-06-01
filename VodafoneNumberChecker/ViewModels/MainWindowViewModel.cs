@@ -15,6 +15,7 @@ namespace VodafoneNumberChecker.ViewModels
         private readonly IWebViewService _webViewService;
         private readonly IPhoneSearchService _phoneSearchService;
         private readonly IDataService _dataService;
+        private readonly ISimDataValidationService _simDataValidationService;
         private readonly PhoneOffersViewModel? _phoneOffersViewModel;
         private readonly ConfigViewModel _configViewModel;
         private readonly ILoggerService _logger;
@@ -36,12 +37,13 @@ namespace VodafoneNumberChecker.ViewModels
         private int _totalIterations = 0;
         private IterationReport? _selectedIterationReport;
 
-        public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null, ILoggerService? logger = null)
+        public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, ISimDataValidationService simDataValidationService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null, ILoggerService? logger = null)
         {
             _fileService = fileService;
             _webViewService = webViewService;
             _phoneSearchService = phoneSearchService;
             _dataService = dataService;
+            _simDataValidationService = simDataValidationService;
             _phoneOffersViewModel = phoneOffersViewModel;
             _configViewModel = configViewModel ?? new ConfigViewModel();
             _logger = logger ?? new FileLoggerService();
@@ -303,11 +305,30 @@ namespace VodafoneNumberChecker.ViewModels
                         // Run import in background task
                         int importedCount = 0;
                         Exception? importException = null;
+                        List<string>? missingNumbers = null;
                         
                         var importTask = Task.Run(async () =>
                         {
                             try
                             {
+                                // Validate that all numbers exist in external sim_data before any import.
+                                var validationResult = await _simDataValidationService.ValidateNumbersExistAsync(
+                                    _phoneNumbers,
+                                    (current, total, currentNumber) =>
+                                    {
+                                        progressWindow.Dispatcher.Invoke(() =>
+                                        {
+                                            progressWindow.UpdateProgress(current, total, currentNumber, "Проверка номера");
+                                        });
+                                    });
+
+                                if (!validationResult.IsValid)
+                                {
+                                    missingNumbers = validationResult.MissingNumbers;
+                                    _logger.LogInfo($"Import validation failed. Missing numbers count: {missingNumbers.Count}");
+                                    return;
+                                }
+
                                 // Import phone numbers to database with default states
                                 importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers, isPriorityImport, addToExisting,
                                     (current, total, currentNumber) =>
@@ -315,7 +336,7 @@ namespace VodafoneNumberChecker.ViewModels
                                         // Update progress on UI thread
                                         progressWindow.Dispatcher.Invoke(() =>
                                         {
-                                            progressWindow.UpdateProgress(current, total, currentNumber);
+                                            progressWindow.UpdateProgress(current, total, currentNumber, "Импорт номера");
                                         });
                                     });
                                 _logger.LogInfo($"Successfully imported {importedCount} out of {_phoneNumbers.Count} phone numbers");
@@ -358,6 +379,14 @@ namespace VodafoneNumberChecker.ViewModels
                                 "Ошибка",
                                 System.Windows.MessageBoxButton.OK,
                                 System.Windows.MessageBoxImage.Error);
+                        }
+                        else if (missingNumbers != null && missingNumbers.Count > 0)
+                        {
+                            var missingNumbersWindow = new MissingNumbersWindow(missingNumbers)
+                            {
+                                Owner = System.Windows.Application.Current.MainWindow
+                            };
+                            missingNumbersWindow.ShowDialog();
                         }
                         else
                         {

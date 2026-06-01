@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Configuration;
 using System.Threading.Tasks;
 using System.Windows;
 using VodafoneNumberChecker.Data;
@@ -119,6 +120,16 @@ namespace VodafoneNumberChecker
             services.AddSingleton<IFileService, FileService>();
             services.AddSingleton<IWebViewService, WebViewService>();
             services.AddSingleton<IDataService, DataService>();
+            services.AddSingleton<ISimDataValidationService>(sp =>
+            {
+                var connectionString = ConfigurationManager.ConnectionStrings["ExternalSimData"]?.ConnectionString;
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException("ExternalSimData connection string is missing in App.config.");
+                }
+
+                return new SimDataValidationService(connectionString);
+            });
             services.AddSingleton<IPhoneSearchService>(sp => 
                 new PhoneSearchService(
                     sp.GetRequiredService<IWebViewService>(),
@@ -138,6 +149,7 @@ namespace VodafoneNumberChecker
                     sp.GetRequiredService<IWebViewService>(),
                     sp.GetRequiredService<IPhoneSearchService>(),
                     sp.GetRequiredService<IDataService>(),
+                    sp.GetRequiredService<ISimDataValidationService>(),
                     phoneOffersViewModel,
                     configViewModel,
                     sp.GetRequiredService<ILoggerService>());
