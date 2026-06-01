@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Threading;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using VodafoneNumberChecker.Models;
 using VodafoneNumberChecker.Services;
 
@@ -32,6 +34,7 @@ namespace VodafoneNumberChecker.ViewModels
         private string _iterationInfo = string.Empty;
         private int _currentIteration = 0;
         private int _totalIterations = 0;
+        private IterationReport? _selectedIterationReport;
 
         public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null, ILoggerService? logger = null)
         {
@@ -54,6 +57,11 @@ namespace VodafoneNumberChecker.ViewModels
             OpenConfigCommand = new RelayCommand(OpenConfig, () => _isAuthenticated);
             ResetScannedCommand = new RelayCommand(async () => await ResetScannedAsync(), () => _isAuthenticated && !_isScanning);
             ResetAllCommand = new RelayCommand(async () => await ResetAllAsync(), () => _isAuthenticated && !_isScanning);
+            ClearIterationHistoryCommand = new RelayCommand(
+                async () => await ClearIterationHistoryAsync(),
+                () => _isAuthenticated && !_isScanning && IterationReports.Count > 0);
+
+            IterationReports.CollectionChanged += IterationReports_CollectionChanged;
         }
 
         public ICommand ImportPhoneNumbersCommand { get; }
@@ -61,6 +69,7 @@ namespace VodafoneNumberChecker.ViewModels
         public ICommand OpenConfigCommand { get; }
         public ICommand ResetScannedCommand { get; }
         public ICommand ResetAllCommand { get; }
+        public ICommand ClearIterationHistoryCommand { get; }
 
         public bool IsScanning
         {
@@ -72,6 +81,7 @@ namespace VodafoneNumberChecker.ViewModels
                 OnPropertyChanged(nameof(ScanButtonText));
                 ((RelayCommand)ResetScannedCommand).RaiseCanExecuteChanged();
                 ((RelayCommand)ResetAllCommand).RaiseCanExecuteChanged();
+                ((RelayCommand)ClearIterationHistoryCommand).RaiseCanExecuteChanged();
             }
         }
 
@@ -206,6 +216,30 @@ namespace VodafoneNumberChecker.ViewModels
                 OnPropertyChanged();
                 UpdateIterationInfo();
             }
+        }
+
+        public ObservableCollection<IterationReport> IterationReports { get; } = new();
+
+        public IterationReport? SelectedIterationReport
+        {
+            get => _selectedIterationReport;
+            set
+            {
+                _selectedIterationReport = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public async Task LoadIterationReportsAsync()
+        {
+            var reports = await _dataService.GetIterationReportsAsync();
+            IterationReports.Clear();
+            foreach (var report in reports)
+            {
+                IterationReports.Add(report);
+            }
+
+            SelectedIterationReport = IterationReports.FirstOrDefault();
         }
 
         private void UpdateIterationInfo()
@@ -444,7 +478,11 @@ namespace VodafoneNumberChecker.ViewModels
                     }
 
                     TotalNumbers = unprocessedOffers.Count;
-                    await ProcessPhoneOffersListAsync(unprocessedOffers, configuration);
+                    var firstReport = await ProcessPhoneOffersListAsync(
+                        unprocessedOffers,
+                        configuration,
+                        "Обработка всех номеров");
+                    await AddIterationReportAsync(firstReport);
 
                     // Cycle 2-N: Process empty propositions (if configured)
                     if (configuration.EmptyPropositionsRepeats > 0)
@@ -463,7 +501,12 @@ namespace VodafoneNumberChecker.ViewModels
                             }
 
                             TotalNumbers = emptyPropositions.Count;
-                            await ProcessPhoneOffersListAsync(emptyPropositions, configuration, excludeOnSuccess: true);
+                            var emptyReport = await ProcessPhoneOffersListAsync(
+                                emptyPropositions,
+                                configuration,
+                                $"Пустые предложения (цикл {i}/{configuration.EmptyPropositionsRepeats})",
+                                excludeOnSuccess: true);
+                            await AddIterationReportAsync(emptyReport);
                         }
                     }
 
@@ -484,7 +527,12 @@ namespace VodafoneNumberChecker.ViewModels
                             }
 
                             TotalNumbers = errorNumbers.Count;
-                            await ProcessPhoneOffersListAsync(errorNumbers, configuration, excludeOnSuccess: true);
+                            var errorReport = await ProcessPhoneOffersListAsync(
+                                errorNumbers,
+                                configuration,
+                                $"Номера с ошибками (цикл {i}/{configuration.ErrorNumbersRepeats})",
+                                excludeOnSuccess: true);
+                            await AddIterationReportAsync(errorReport);
                         }
                     }
 
@@ -682,6 +730,36 @@ namespace VodafoneNumberChecker.ViewModels
             }
         }
 
+        private async Task ClearIterationHistoryAsync()
+        {
+            try
+            {
+                var result = System.Windows.MessageBox.Show(
+                    "Очистить всю историю отчетов по итерациям?",
+                    "Подтверждение",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
+
+                if (result != System.Windows.MessageBoxResult.Yes)
+                {
+                    return;
+                }
+
+                await _dataService.ClearIterationReportsAsync();
+                IterationReports.Clear();
+                SelectedIterationReport = null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error clearing iteration history", ex);
+                System.Windows.MessageBox.Show(
+                    $"Ошибка при очистке истории итераций: {ex.Message}",
+                    "Ошибка",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+        }
+
         // IProgressReporter implementation
         public void ReportInputProgress(double progress)
         {
@@ -718,8 +796,20 @@ namespace VodafoneNumberChecker.ViewModels
             ServerErrors += count;
         }
 
-        private async Task ProcessPhoneOffersListAsync(List<PhoneOffer> offers, ProcessingConfiguration configuration, bool excludeOnSuccess = false)
+        private async Task<IterationReport> ProcessPhoneOffersListAsync(
+            List<PhoneOffer> offers,
+            ProcessingConfiguration configuration,
+            string iterationLabel,
+            bool excludeOnSuccess = false)
         {
+            var report = new IterationReport
+            {
+                IterationNumber = CurrentIteration,
+                IterationLabel = iterationLabel,
+                StartedAt = DateTime.Now,
+                PlannedCount = offers.Count
+            };
+
             foreach (var phoneOffer in offers)
             {
                 // Check for cancellation
@@ -729,11 +819,98 @@ namespace VodafoneNumberChecker.ViewModels
                 var currentConfig = _configViewModel.GetConfiguration();
 
                 await _phoneSearchService.ProcessPhoneOfferAsync(phoneOffer, currentConfig, this, _cancellationTokenSource.Token);
+
+                var updatedOffer = await _dataService.GetPhoneOfferByIdAsync(phoneOffer.Id);
+                var itemReport = BuildIterationItemReport(phoneOffer.PhoneNumber, updatedOffer);
+                report.Items.Add(itemReport);
+                report.ProcessedCount++;
+
+                switch (itemReport.Outcome)
+                {
+                    case "Найдено":
+                        report.FoundCount++;
+                        break;
+                    case "Ошибка":
+                        report.ErrorCount++;
+                        break;
+                    case "Нет предложений":
+                        report.NotFoundCount++;
+                        break;
+                    case "Не подходящие":
+                        report.NotSuitableCount++;
+                        break;
+                    default:
+                        report.NoOfferCount++;
+                        break;
+                }
                 
                 // Note: If excludeOnSuccess is true, numbers that get propositions will be automatically
                 // excluded from next iterations because GetEmptyPropositionsAsync and GetErrorNumbersAsync
                 // filter by DiscountPercent == 0 && GiftAmount == 0 (for empty) or IsError == true (for errors)
             }
+
+            report.CompletedAt = DateTime.Now;
+            return report;
+        }
+
+        private async Task AddIterationReportAsync(IterationReport report)
+        {
+            var savedReport = await _dataService.SaveIterationReportAsync(report);
+            IterationReports.Insert(0, savedReport);
+            SelectedIterationReport = savedReport;
+        }
+
+        private static IterationItemReport BuildIterationItemReport(string fallbackPhoneNumber, PhoneOffer? offer)
+        {
+            if (offer == null)
+            {
+                return new IterationItemReport
+                {
+                    PhoneNumber = fallbackPhoneNumber,
+                    Outcome = "Не определено",
+                    IsError = true,
+                    ErrorDescription = "Не удалось загрузить запись после обработки"
+                };
+            }
+
+            bool hasValidOffer =
+                offer.ActiveDays != 0 ||
+                offer.DiscountPercent != 0 ||
+                offer.GiftAmount != 0 ||
+                offer.MinTopupAmount != 0;
+
+            string outcome;
+            if (offer.IsError)
+            {
+                outcome = "Ошибка";
+            }
+            else if (hasValidOffer)
+            {
+                outcome = "Найдено";
+            }
+            else if (offer.IsPropositionsNotFound)
+            {
+                outcome = "Нет предложений";
+            }
+            else if (offer.IsPropositionsNotSuitable)
+            {
+                outcome = "Не подходящие";
+            }
+            else
+            {
+                outcome = "Без результата";
+            }
+
+            return new IterationItemReport
+            {
+                PhoneNumber = offer.PhoneNumber,
+                Outcome = outcome,
+                DiscountPercent = offer.DiscountPercent,
+                GiftAmount = offer.GiftAmount,
+                MinTopupAmount = offer.MinTopupAmount,
+                IsError = offer.IsError,
+                ErrorDescription = offer.ErrorDescription
+            };
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -741,6 +918,11 @@ namespace VodafoneNumberChecker.ViewModels
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void IterationReports_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            ((RelayCommand)ClearIterationHistoryCommand).RaiseCanExecuteChanged();
         }
     }
 }

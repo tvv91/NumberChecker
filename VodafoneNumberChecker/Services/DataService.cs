@@ -139,6 +139,40 @@ namespace VodafoneNumberChecker.Services
                     // If DROP COLUMN fails (old SQLite version), columns will remain but won't be used
                     // This is acceptable - the application will work fine without them
                 }
+
+                // Create iteration reports tables if they don't exist yet
+                command.CommandText =
+                    @"CREATE TABLE IF NOT EXISTS IterationHistories (
+                        Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        IterationNumber INTEGER NOT NULL,
+                        IterationLabel TEXT NOT NULL,
+                        StartedAt TEXT NOT NULL,
+                        CompletedAt TEXT NOT NULL,
+                        PlannedCount INTEGER NOT NULL,
+                        ProcessedCount INTEGER NOT NULL,
+                        FoundCount INTEGER NOT NULL,
+                        ErrorCount INTEGER NOT NULL,
+                        NotFoundCount INTEGER NOT NULL,
+                        NotSuitableCount INTEGER NOT NULL,
+                        NoOfferCount INTEGER NOT NULL,
+                        CreatedAt TEXT NOT NULL
+                    );";
+                await command.ExecuteNonQueryAsync();
+
+                command.CommandText =
+                    @"CREATE TABLE IF NOT EXISTS IterationHistoryItems (
+                        Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        IterationHistoryId INTEGER NOT NULL,
+                        PhoneNumber TEXT NOT NULL,
+                        Outcome TEXT NOT NULL,
+                        DiscountPercent INTEGER NOT NULL,
+                        GiftAmount TEXT NOT NULL,
+                        MinTopupAmount TEXT NOT NULL,
+                        IsError INTEGER NOT NULL,
+                        ErrorDescription TEXT NULL,
+                        FOREIGN KEY (IterationHistoryId) REFERENCES IterationHistories (Id) ON DELETE CASCADE
+                    );";
+                await command.ExecuteNonQueryAsync();
                 
                 await connection.CloseAsync();
             }
@@ -290,6 +324,12 @@ namespace VodafoneNumberChecker.Services
             return await query
                 .OrderBy(p => p.Id)
                 .ToListAsync();
+        }
+
+        public async Task<PhoneOffer?> GetPhoneOfferByIdAsync(int phoneOfferId)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            return await context.PhoneOffers.FirstOrDefaultAsync(p => p.Id == phoneOfferId);
         }
 
         public async Task<List<PhoneOffer>> GetEmptyPropositionsAsync()
@@ -790,6 +830,86 @@ namespace VodafoneNumberChecker.Services
             }
             
             return await query.Where(p => p.IsPropositionsNotSuitable).CountAsync();
+        }
+
+        public async Task<IterationReport> SaveIterationReportAsync(IterationReport report)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+
+            var entity = new IterationHistory
+            {
+                IterationNumber = report.IterationNumber,
+                IterationLabel = report.IterationLabel,
+                StartedAt = report.StartedAt,
+                CompletedAt = report.CompletedAt,
+                PlannedCount = report.PlannedCount,
+                ProcessedCount = report.ProcessedCount,
+                FoundCount = report.FoundCount,
+                ErrorCount = report.ErrorCount,
+                NotFoundCount = report.NotFoundCount,
+                NotSuitableCount = report.NotSuitableCount,
+                NoOfferCount = report.NoOfferCount,
+                CreatedAt = DateTime.UtcNow,
+                Items = report.Items.Select(i => new IterationHistoryItem
+                {
+                    PhoneNumber = i.PhoneNumber,
+                    Outcome = i.Outcome,
+                    DiscountPercent = i.DiscountPercent,
+                    GiftAmount = i.GiftAmount,
+                    MinTopupAmount = i.MinTopupAmount,
+                    IsError = i.IsError,
+                    ErrorDescription = i.ErrorDescription
+                }).ToList()
+            };
+
+            context.IterationHistories.Add(entity);
+            await context.SaveChangesAsync();
+            report.Id = entity.Id;
+            return report;
+        }
+
+        public async Task<List<IterationReport>> GetIterationReportsAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+
+            var reports = await context.IterationHistories
+                .Include(r => r.Items)
+                .OrderByDescending(r => r.Id)
+                .ToListAsync();
+
+            return reports.Select(r => new IterationReport
+            {
+                Id = r.Id,
+                IterationNumber = r.IterationNumber,
+                IterationLabel = r.IterationLabel,
+                StartedAt = r.StartedAt,
+                CompletedAt = r.CompletedAt,
+                PlannedCount = r.PlannedCount,
+                ProcessedCount = r.ProcessedCount,
+                FoundCount = r.FoundCount,
+                ErrorCount = r.ErrorCount,
+                NotFoundCount = r.NotFoundCount,
+                NotSuitableCount = r.NotSuitableCount,
+                NoOfferCount = r.NoOfferCount,
+                Items = new System.Collections.ObjectModel.ObservableCollection<IterationItemReport>(
+                    r.Items.Select(i => new IterationItemReport
+                    {
+                        PhoneNumber = i.PhoneNumber,
+                        Outcome = i.Outcome,
+                        DiscountPercent = i.DiscountPercent,
+                        GiftAmount = i.GiftAmount,
+                        MinTopupAmount = i.MinTopupAmount,
+                        IsError = i.IsError,
+                        ErrorDescription = i.ErrorDescription
+                    }))
+            }).ToList();
+        }
+
+        public async Task ClearIterationReportsAsync()
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM IterationHistoryItems;");
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM IterationHistories;");
         }
     }
 }

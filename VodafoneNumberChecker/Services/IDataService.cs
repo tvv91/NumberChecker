@@ -11,6 +11,7 @@ namespace VodafoneNumberChecker.Services
         Task SetLastProcessedPhoneIdAsync(int? phoneId);
         Task<List<PhoneOffer>> GetPhoneOffersAsync(int skip = 0, int take = 50, string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null, bool? isPriority = null);
         Task<int> GetPhoneOffersCountAsync(string? phoneFilter = null, bool? hasDiscount = null, bool? hasGift = null, bool? isEmptyProposition = null, bool? hasError = null, bool? isPropositionsNotFound = null, bool? isPropositionsNotSuitable = null, bool? isPriority = null);
+        Task<PhoneOffer?> GetPhoneOfferByIdAsync(int phoneOfferId);
         Task<List<PhoneOffer>> GetUnprocessedPhoneOffersAsync();
         Task<List<PhoneOffer>> GetEmptyPropositionsAsync();
         Task<List<PhoneOffer>> GetErrorNumbersAsync();
@@ -30,6 +31,9 @@ namespace VodafoneNumberChecker.Services
         Task<int> GetErrorCountAsync(string? phoneFilter = null, bool? isPriority = null);
         Task<int> GetNotFoundCountAsync(string? phoneFilter = null, bool? isPriority = null);
         Task<int> GetNotSuitableCountAsync(string? phoneFilter = null, bool? isPriority = null);
+        Task<IterationReport> SaveIterationReportAsync(IterationReport report);
+        Task<List<IterationReport>> GetIterationReportsAsync();
+        Task ClearIterationReportsAsync();
     }
 }
 

@@ -476,6 +476,64 @@
                     </Border>
                 </Grid>
             </TabItem>
+            <TabItem Header="Отчеты итераций">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,5,5,0">
+                        <Button Content="Очистить историю"
+                                Command="{Binding ClearIterationHistoryCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Padding="10,5"/>
+                    </StackPanel>
+
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding IterationReports}"
+                              SelectedItem="{Binding SelectedIterationReport, Mode=TwoWay}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Margin="5"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="All"
+                              FontSize="12">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Итерация" Binding="{Binding IterationNumber}" Width="80"/>
+                            <DataGridTextColumn Header="Тип" Binding="{Binding IterationLabel}" Width="260"/>
+                            <DataGridTextColumn Header="План" Binding="{Binding PlannedCount}" Width="80"/>
+                            <DataGridTextColumn Header="Обработано" Binding="{Binding ProcessedCount}" Width="95"/>
+                            <DataGridTextColumn Header="Найдено" Binding="{Binding FoundCount}" Width="80"/>
+                            <DataGridTextColumn Header="Ошибки" Binding="{Binding ErrorCount}" Width="80"/>
+                            <DataGridTextColumn Header="Нет предложений" Binding="{Binding NotFoundCount}" Width="110"/>
+                            <DataGridTextColumn Header="Не подходят" Binding="{Binding NotSuitableCount}" Width="100"/>
+                            <DataGridTextColumn Header="Без результата" Binding="{Binding NoOfferCount}" Width="110"/>
+                            <DataGridTextColumn Header="Длительность" Binding="{Binding DurationText}" Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <DataGrid Grid.Row="2"
+                              ItemsSource="{Binding SelectedIterationReport.Items}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Margin="5"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="All"
+                              FontSize="12">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Номер телефона" Binding="{Binding PhoneNumber}" Width="150"/>
+                            <DataGridTextColumn Header="Результат" Binding="{Binding Outcome}" Width="120"/>
+                            <DataGridTextColumn Header="Скидка %" Binding="{Binding DiscountPercent}" Width="80"/>
+                            <DataGridTextColumn Header="Подарок" Binding="{Binding GiftAmount, StringFormat='{}{0:F2} грн'}" Width="100"/>
+                            <DataGridTextColumn Header="Мин. пополнение" Binding="{Binding MinTopupAmount, StringFormat='{}{0:F2} грн'}" Width="120"/>
+                            <DataGridTextColumn Header="Ошибка" Binding="{Binding IsError, Converter={StaticResource BoolToYesNoConverter}}" Width="70"/>
+                            <DataGridTextColumn Header="Описание ошибки" Binding="{Binding ErrorDescription}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
         </TabControl>
 
         <!-- Progress Bars -->

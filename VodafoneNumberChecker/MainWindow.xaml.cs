@@ -50,6 +50,9 @@ namespace VodafoneNumberChecker
                     // Subscribe to PropertyChanged to auto-size Title column when data changes
                     _propositionTypesViewModel.PropertyChanged += PropositionTypesViewModel_PropertyChanged;
                 }
+
+                // Load persisted iteration reports history
+                await _viewModel.LoadIterationReportsAsync();
                 
                 // Set initial WebView tab visibility
                 UpdateWebViewTabVisibility();

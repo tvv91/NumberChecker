@@ -8,6 +8,8 @@ namespace VodafoneNumberChecker.Data
         public DbSet<PhoneOffer> PhoneOffers { get; set; }
         public DbSet<SyncState> SyncStates { get; set; }
         public DbSet<PropositionType> PropositionTypes { get; set; }
+        public DbSet<IterationHistory> IterationHistories { get; set; }
+        public DbSet<IterationHistoryItem> IterationHistoryItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,6 +38,23 @@ namespace VodafoneNumberChecker.Data
                 entity.HasKey(e => e.Id);
                 // Changed from unique index on Title to allow same title with different content
                 entity.HasIndex(e => new { e.Title, e.Content });
+            });
+
+            modelBuilder.Entity<IterationHistory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasMany(e => e.Items)
+                    .WithOne(i => i.IterationHistory)
+                    .HasForeignKey(i => i.IterationHistoryId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<IterationHistoryItem>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.IterationHistoryId);
+                entity.HasIndex(e => e.PhoneNumber);
             });
         }
     }
