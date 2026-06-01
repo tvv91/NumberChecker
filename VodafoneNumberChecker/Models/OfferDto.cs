@@ -38,22 +38,5 @@ namespace VodafoneNumberChecker.Models
         }
     }
 
-    internal class OffersResponseDto
-    {
-        [JsonPropertyName("Offers")]
-        public List<OfferDto> Offers { get; set; } = new();
-
-        [JsonPropertyName("IsPropositionsNotFound")]
-        public bool IsPropositionsNotFound { get; set; }
-    }
-
-    internal class PropositionTypeDto
-    {
-        [JsonPropertyName("Title")]
-        public string Title { get; set; } = string.Empty;
-
-        [JsonPropertyName("Content")]
-        public string Content { get; set; } = string.Empty;
-    }
 }
 
