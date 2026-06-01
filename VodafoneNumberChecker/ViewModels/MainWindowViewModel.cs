@@ -279,8 +279,9 @@ namespace VodafoneNumberChecker.ViewModels
                         }
 
                         bool isPriorityImport = importOptionsWindow.IsPriority;
+                        bool addToExisting = importOptionsWindow.AddToExisting;
 
-                        _logger.LogInfo($"Starting import from file: {dialog.FileName}. Priority: {isPriorityImport}");
+                        _logger.LogInfo($"Starting import from file: {dialog.FileName}. Priority: {isPriorityImport}. AddToExisting: {addToExisting}");
                         _phoneNumbers = _fileService.ReadPhoneNumbers(dialog.FileName);
                         
                         if (_phoneNumbers.Count == 0)
@@ -308,7 +309,7 @@ namespace VodafoneNumberChecker.ViewModels
                             try
                             {
                                 // Import phone numbers to database with default states
-                                importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers, isPriorityImport,
+                                importedCount = await _dataService.ImportPhoneNumbersAsync(_phoneNumbers, isPriorityImport, addToExisting,
                                     (current, total, currentNumber) =>
                                     {
                                         // Update progress on UI thread
@@ -317,15 +318,6 @@ namespace VodafoneNumberChecker.ViewModels
                                             progressWindow.UpdateProgress(current, total, currentNumber);
                                         });
                                     });
-                                
-                                TotalNumbers = _phoneNumbers.Count;
-                                
-                                // Refresh PhoneOffersViewModel to show newly imported numbers
-                                if (_phoneOffersViewModel != null)
-                                {
-                                    await _phoneOffersViewModel.LoadDataAsync();
-                                }
-                                
                                 _logger.LogInfo($"Successfully imported {importedCount} out of {_phoneNumbers.Count} phone numbers");
                             }
                             catch (Exception ex)
@@ -348,6 +340,15 @@ namespace VodafoneNumberChecker.ViewModels
                         
                         // Wait for import to complete (should already be done, but ensure)
                         await importTask;
+
+                        // Always refresh data on UI thread after import completes.
+                        // This prevents stale list issues when import runs on background thread.
+                        TotalNumbers = await _dataService.GetPhoneOffersCountAsync();
+                        if (_phoneOffersViewModel != null)
+                        {
+                            _phoneOffersViewModel.CurrentPage = 1;
+                            await _phoneOffersViewModel.LoadDataAsync();
+                        }
                         
                         // Show result message
                         if (importException != null)

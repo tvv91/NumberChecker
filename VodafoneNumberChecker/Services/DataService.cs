@@ -261,10 +261,13 @@ namespace VodafoneNumberChecker.Services
             return phoneOffer.Id;
         }
 
-        public async Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers, bool isPriority = false, Action<int, int, string?>? progressCallback = null)
+        public async Task<int> ImportPhoneNumbersAsync(List<string> phoneNumbers, bool isPriority = false, bool addToExisting = false, Action<int, int, string?>? progressCallback = null)
         {
-            // Clear all existing phone offers first
-            await ClearAllPhoneOffersAsync();
+            // Replace mode clears existing numbers. Append mode keeps existing records.
+            if (!addToExisting)
+            {
+                await ClearAllPhoneOffersAsync();
+            }
             
             int importedCount = 0;
             int total = phoneNumbers.Count;

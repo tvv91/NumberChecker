@@ -126,7 +126,7 @@ namespace VodafoneNumberChecker
                     sp.GetRequiredService<ILoggerService>()));
 
             // Register ViewModels - PhoneOffersViewModel and ConfigViewModel must be created first
-            services.AddTransient<PhoneOffersViewModel>();
+            services.AddSingleton<PhoneOffersViewModel>();
             services.AddTransient<PropositionTypesViewModel>();
             services.AddSingleton<ConfigViewModel>();
             services.AddTransient<MainWindowViewModel>(sp =>

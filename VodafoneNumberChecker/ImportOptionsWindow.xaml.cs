@@ -10,6 +10,7 @@ namespace VodafoneNumberChecker
         }
 
         public bool IsPriority => priorityCheckBox.IsChecked == true;
+        public bool AddToExisting => addToExistingCheckBox.IsChecked == true;
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {

@@ -1,12 +1,13 @@
 <Window x:Class="VodafoneNumberChecker.ImportOptionsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Параметры импорта" Height="220" Width="420"
+        Title="Параметры импорта" Height="260" Width="420"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False">
     <Grid Margin="18">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -37,7 +38,18 @@
                        Margin="8,0,0,0"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="4"
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Top"
+                    Margin="0,0,0,12">
+            <CheckBox x:Name="addToExistingCheckBox"
+                      VerticalAlignment="Center"/>
+            <TextBlock Text="Добавить к существующим"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="5"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,12,0,0">
