@@ -18,7 +18,6 @@ namespace VodafoneNumberChecker.Models
         public int ErrorCount { get; set; }
         public int NotFoundCount { get; set; }
         public int NotSuitableCount { get; set; }
-        public int NoOfferCount { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<IterationHistoryItem> Items { get; set; } = new List<IterationHistoryItem>();

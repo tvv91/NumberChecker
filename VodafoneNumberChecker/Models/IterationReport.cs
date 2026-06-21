@@ -17,7 +17,6 @@ namespace VodafoneNumberChecker.Models
         public int ErrorCount { get; set; }
         public int NotFoundCount { get; set; }
         public int NotSuitableCount { get; set; }
-        public int NoOfferCount { get; set; }
         public ObservableCollection<IterationItemReport> Items { get; set; } = new();
 
         public string DurationText => FormatDuration(CompletedAt - StartedAt);

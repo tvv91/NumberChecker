@@ -514,7 +514,6 @@
                             <DataGridTextColumn Header="Ошибки" Binding="{Binding ErrorCount}" Width="80"/>
                             <DataGridTextColumn Header="Нет предложений" Binding="{Binding NotFoundCount}" Width="110"/>
                             <DataGridTextColumn Header="Не подходят" Binding="{Binding NotSuitableCount}" Width="100"/>
-                            <DataGridTextColumn Header="Без результата" Binding="{Binding NoOfferCount}" Width="110"/>
                             <DataGridTextColumn Header="Длительность" Binding="{Binding DurationText}" Width="120"/>
                         </DataGrid.Columns>
                     </DataGrid>

@@ -887,9 +887,6 @@ namespace VodafoneNumberChecker.ViewModels
                     case "Не подходящие":
                         report.NotSuitableCount++;
                         break;
-                    default:
-                        report.NoOfferCount++;
-                        break;
                 }
                 
                 // Note: If excludeOnSuccess is true, numbers that get propositions will be automatically
@@ -915,17 +912,13 @@ namespace VodafoneNumberChecker.ViewModels
                 return new IterationItemReport
                 {
                     PhoneNumber = fallbackPhoneNumber,
-                    Outcome = "Не определено",
+                    Outcome = "Ошибка",
                     IsError = true,
                     ErrorDescription = "Не удалось загрузить запись после обработки"
                 };
             }
 
-            bool hasValidOffer =
-                offer.ActiveDays != 0 ||
-                offer.DiscountPercent != 0 ||
-                offer.GiftAmount != 0 ||
-                offer.MinTopupAmount != 0;
+            bool hasValidOffer = OfferClassification.HasDiscountOrGift(offer);
 
             string outcome;
             if (offer.IsError)
@@ -940,13 +933,9 @@ namespace VodafoneNumberChecker.ViewModels
             {
                 outcome = "Нет предложений";
             }
-            else if (offer.IsPropositionsNotSuitable)
-            {
-                outcome = "Не подходящие";
-            }
             else
             {
-                outcome = "Без результата";
+                outcome = "Не подходящие";
             }
 
             return new IterationItemReport

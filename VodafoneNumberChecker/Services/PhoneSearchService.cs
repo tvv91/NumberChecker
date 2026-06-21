@@ -181,12 +181,7 @@ namespace VodafoneNumberChecker.Services
             {
                 var offer = offers[0];
                 
-                // Count offer as found only if at least one of these fields is not zero:
-                // ActiveDays, Discount, Gift, MinTopUp
-                bool hasValidOffer = offer.ActiveDays != 0 || 
-                                     offer.Discount != 0 || 
-                                     offer.Gift != 0 || 
-                                     offer.MinTopUp != 0;
+                bool hasValidOffer = OfferClassification.HasDiscountOrGift(offer);
                 
                 if (hasValidOffer)
                 {

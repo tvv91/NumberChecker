@@ -272,6 +272,7 @@ namespace VodafoneNumberCheckerTests
             // Assert
             Assert.That(response.Offers, Is.Not.Null);
             Assert.That(response.IsPropositionsNotFound, Is.False, "Should not have 'propositions not found' flag");
+            Assert.That(response.Offers.Count, Is.EqualTo(0), "Min-topup-only propositions should not count as offers");
         }
     }
 }

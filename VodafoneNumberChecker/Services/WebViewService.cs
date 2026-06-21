@@ -184,8 +184,8 @@ namespace VodafoneNumberChecker.Services
                 const validUntilMatch = text.match(/до\s+(\d{4}-\d{2}-\d{2})/i);
                 const validUntil = validUntilMatch ? validUntilMatch[1] : null;
 
-                // Only add offer if it has at least discount or gift
-                if (discount > 0 || gift > 0 || minTopUp > 0) {
+                // Only add offer if it has discount or gift (matches Data tab filters)
+                if (discount > 0 || gift > 0) {
                     offers.push({
                         Discount: discount,
                         MinTopUp: minTopUp,

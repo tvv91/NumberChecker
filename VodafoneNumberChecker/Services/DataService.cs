@@ -156,7 +156,6 @@ namespace VodafoneNumberChecker.Services
                         ErrorCount INTEGER NOT NULL,
                         NotFoundCount INTEGER NOT NULL,
                         NotSuitableCount INTEGER NOT NULL,
-                        NoOfferCount INTEGER NOT NULL,
                         CreatedAt TEXT NOT NULL
                     );";
                 await command.ExecuteNonQueryAsync();
@@ -892,7 +891,6 @@ namespace VodafoneNumberChecker.Services
                 ErrorCount = report.ErrorCount,
                 NotFoundCount = report.NotFoundCount,
                 NotSuitableCount = report.NotSuitableCount,
-                NoOfferCount = report.NoOfferCount,
                 CreatedAt = DateTime.UtcNow,
                 Items = report.Items.Select(i => new IterationHistoryItem
                 {
@@ -938,7 +936,6 @@ namespace VodafoneNumberChecker.Services
                     ErrorCount = r.ErrorCount,
                     NotFoundCount = r.NotFoundCount,
                     NotSuitableCount = r.NotSuitableCount,
-                    NoOfferCount = r.NoOfferCount,
                     Items = new System.Collections.ObjectModel.ObservableCollection<IterationItemReport>(
                         r.Items.Select(i => new IterationItemReport
                         {
