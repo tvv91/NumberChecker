@@ -3,6 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Настройки" Height="420" Width="650"
         WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -15,9 +18,18 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0">
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding TimingValidationMessage}"
+                               Foreground="#C0392B"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Margin="8,0,8,8"
+                               Visibility="{Binding HasTimingValidationMessage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                    <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
@@ -28,10 +40,10 @@
                         <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="8,0">
                             <TextBlock Text="Ввод номера (сек)" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
                             <TextBlock Text="Мин" HorizontalAlignment="Center" FontSize="11"/>
-                            <Slider Minimum="0" Maximum="60" Value="{Binding DelayInputMin, Mode=TwoWay}" Height="20"/>
+                            <Slider Minimum="0" Maximum="60" Value="{Binding DelayInputMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20"/>
                             <TextBlock Text="{Binding DelayInputMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center" FontSize="11"/>
                             <TextBlock Text="Макс" HorizontalAlignment="Center" Margin="0,6,0,0" FontSize="11"/>
-                            <Slider Minimum="0" Maximum="60" Value="{Binding DelayInputMax, Mode=TwoWay}" Height="20"/>
+                            <Slider Minimum="0" Maximum="60" Value="{Binding DelayInputMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20"/>
                             <TextBlock Text="{Binding DelayInputMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center" FontSize="11"/>
                         </StackPanel>
 
@@ -39,10 +51,10 @@
                         <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="8,0">
                             <TextBlock Text="Нажатие на поиск (сек)" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
                             <TextBlock Text="Мин" HorizontalAlignment="Center" FontSize="11"/>
-                            <Slider Minimum="0" Maximum="60" Value="{Binding DelaySearchMin, Mode=TwoWay}" Height="20"/>
+                            <Slider Minimum="0" Maximum="60" Value="{Binding DelaySearchMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20"/>
                             <TextBlock Text="{Binding DelaySearchMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center" FontSize="11"/>
                             <TextBlock Text="Макс" HorizontalAlignment="Center" Margin="0,6,0,0" FontSize="11"/>
-                            <Slider Minimum="0" Maximum="60" Value="{Binding DelaySearchMax, Mode=TwoWay}" Height="20"/>
+                            <Slider Minimum="0" Maximum="60" Value="{Binding DelaySearchMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20"/>
                             <TextBlock Text="{Binding DelaySearchMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center" FontSize="11"/>
                         </StackPanel>
 
@@ -50,16 +62,16 @@
                         <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="8,0">
                             <TextBlock Text="Следующий номер (сек)" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,6"/>
                             <TextBlock Text="Мин" HorizontalAlignment="Center" FontSize="11"/>
-                            <Slider Minimum="0" Maximum="60" Value="{Binding DelayNextMin, Mode=TwoWay}" Height="20"/>
+                            <Slider Minimum="0" Maximum="60" Value="{Binding DelayNextMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20"/>
                             <TextBlock Text="{Binding DelayNextMin, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center" FontSize="11"/>
                             <TextBlock Text="Макс" HorizontalAlignment="Center" Margin="0,6,0,0" FontSize="11"/>
-                            <Slider Minimum="0" Maximum="60" Value="{Binding DelayNextMax, Mode=TwoWay}" Height="20"/>
+                            <Slider Minimum="0" Maximum="60" Value="{Binding DelayNextMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="20"/>
                             <TextBlock Text="{Binding DelayNextMax, StringFormat='{}{0:F0} c'}" HorizontalAlignment="Center" FontSize="11"/>
                         </StackPanel>
                     </Grid>
 
                     <!-- First pass time estimate -->
-                    <Border Grid.Row="1" Margin="8,14,8,0" Padding="10" Background="#F5F8FF" BorderBrush="#D8E6FF" BorderThickness="1" CornerRadius="6">
+                    <Border Grid.Row="2" Margin="8,14,8,0" Padding="10" Background="#F5F8FF" BorderBrush="#D8E6FF" BorderThickness="1" CornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Оценка времени первого прохода" FontWeight="Bold" FontSize="12"/>
                             <TextBlock Text="{Binding PhoneNumbersCount, StringFormat='Номеров в базе: {0}'}" Margin="0,4,0,0" FontSize="11"/>

@@ -18,71 +18,60 @@ namespace VodafoneNumberChecker.ViewModels
         private bool _is24x7Mode;
         private bool _shouldTopUpNumbers;
         private int _phoneNumbersCount;
+        private string _timingValidationMessage = string.Empty;
+
+        public string TimingValidationMessage
+        {
+            get => _timingValidationMessage;
+            private set
+            {
+                if (_timingValidationMessage == value)
+                {
+                    return;
+                }
+
+                _timingValidationMessage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasTimingValidationMessage));
+            }
+        }
+
+        public bool HasTimingValidationMessage => !string.IsNullOrEmpty(TimingValidationMessage);
 
         public double DelayInputMin
         {
             get => _delayInputMin;
-            set
-            {
-                _delayInputMin = value;
-                OnPropertyChanged();
-                NotifyTimeEstimateChanged();
-            }
+            set => SetDelayMin(ref _delayInputMin, value, _delayInputMax, nameof(DelayInputMin), "Ввод номера");
         }
 
         public double DelayInputMax
         {
             get => _delayInputMax;
-            set
-            {
-                _delayInputMax = value;
-                OnPropertyChanged();
-                NotifyTimeEstimateChanged();
-            }
+            set => SetDelayMax(ref _delayInputMax, value, _delayInputMin, nameof(DelayInputMax), "Ввод номера");
         }
 
         public double DelaySearchMin
         {
             get => _delaySearchMin;
-            set
-            {
-                _delaySearchMin = value;
-                OnPropertyChanged();
-                NotifyTimeEstimateChanged();
-            }
+            set => SetDelayMin(ref _delaySearchMin, value, _delaySearchMax, nameof(DelaySearchMin), "Нажатие на поиск");
         }
 
         public double DelaySearchMax
         {
             get => _delaySearchMax;
-            set
-            {
-                _delaySearchMax = value;
-                OnPropertyChanged();
-                NotifyTimeEstimateChanged();
-            }
+            set => SetDelayMax(ref _delaySearchMax, value, _delaySearchMin, nameof(DelaySearchMax), "Нажатие на поиск");
         }
 
         public double DelayNextMin
         {
             get => _delayNextMin;
-            set
-            {
-                _delayNextMin = value;
-                OnPropertyChanged();
-                NotifyTimeEstimateChanged();
-            }
+            set => SetDelayMin(ref _delayNextMin, value, _delayNextMax, nameof(DelayNextMin), "Следующий номер");
         }
 
         public double DelayNextMax
         {
             get => _delayNextMax;
-            set
-            {
-                _delayNextMax = value;
-                OnPropertyChanged();
-                NotifyTimeEstimateChanged();
-            }
+            set => SetDelayMax(ref _delayNextMax, value, _delayNextMin, nameof(DelayNextMax), "Следующий номер");
         }
 
         public int EmptyPropositionsRepeats
@@ -182,16 +171,17 @@ namespace VodafoneNumberChecker.ViewModels
 
         public void LoadFromConfiguration(ProcessingConfiguration config)
         {
-            DelayInputMin = config.DelayInputMin;
-            DelayInputMax = config.DelayInputMax;
-            DelaySearchMin = config.DelaySearchMin;
-            DelaySearchMax = config.DelaySearchMax;
-            DelayNextMin = config.DelayNextMin;
-            DelayNextMax = config.DelayNextMax;
+            DelayInputMin = Math.Min(config.DelayInputMin, config.DelayInputMax);
+            DelayInputMax = Math.Max(config.DelayInputMin, config.DelayInputMax);
+            DelaySearchMin = Math.Min(config.DelaySearchMin, config.DelaySearchMax);
+            DelaySearchMax = Math.Max(config.DelaySearchMin, config.DelaySearchMax);
+            DelayNextMin = Math.Min(config.DelayNextMin, config.DelayNextMax);
+            DelayNextMax = Math.Max(config.DelayNextMin, config.DelayNextMax);
             EmptyPropositionsRepeats = config.EmptyPropositionsRepeats;
             ErrorNumbersRepeats = config.ErrorNumbersRepeats;
             Is24x7Mode = config.Is24x7Mode;
             ShouldTopUpNumbers = config.ShouldTopUpNumbers;
+            TimingValidationMessage = string.Empty;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -207,20 +197,65 @@ namespace VodafoneNumberChecker.ViewModels
             OnPropertyChanged(nameof(EstimatedMaxFirstPassDuration));
         }
 
+        private void SetDelayMin(ref double field, double requestedValue, double maxValue, string propertyName, string timingLabel)
+        {
+            var clampedValue = Math.Min(requestedValue, maxValue);
+            var wasClamped = requestedValue > maxValue;
+
+            if (wasClamped)
+            {
+                TimingValidationMessage = $"Минимальная задержка («{timingLabel}») не может быть больше максимальной";
+            }
+            else if (HasTimingValidationMessage)
+            {
+                TimingValidationMessage = string.Empty;
+            }
+
+            if (field == clampedValue && !wasClamped)
+            {
+                return;
+            }
+
+            field = clampedValue;
+            OnPropertyChanged(propertyName);
+            NotifyTimeEstimateChanged();
+        }
+
+        private void SetDelayMax(ref double field, double requestedValue, double minValue, string propertyName, string timingLabel)
+        {
+            var clampedValue = Math.Max(requestedValue, minValue);
+            var wasClamped = requestedValue < minValue;
+
+            if (wasClamped)
+            {
+                TimingValidationMessage = $"Максимальная задержка («{timingLabel}») не может быть меньше минимальной";
+            }
+            else if (HasTimingValidationMessage)
+            {
+                TimingValidationMessage = string.Empty;
+            }
+
+            if (field == clampedValue && !wasClamped)
+            {
+                return;
+            }
+
+            field = clampedValue;
+            OnPropertyChanged(propertyName);
+            NotifyTimeEstimateChanged();
+        }
+
         private double GetAverageFirstPassSeconds()
         {
-            var inputAverage = (Math.Min(DelayInputMin, DelayInputMax) + Math.Max(DelayInputMin, DelayInputMax)) / 2.0;
-            var searchAverage = (Math.Min(DelaySearchMin, DelaySearchMax) + Math.Max(DelaySearchMin, DelaySearchMax)) / 2.0;
-            var nextAverage = (Math.Min(DelayNextMin, DelayNextMax) + Math.Max(DelayNextMin, DelayNextMax)) / 2.0;
+            var inputAverage = (DelayInputMin + DelayInputMax) / 2.0;
+            var searchAverage = (DelaySearchMin + DelaySearchMax) / 2.0;
+            var nextAverage = (DelayNextMin + DelayNextMax) / 2.0;
             return PhoneNumbersCount * (inputAverage + searchAverage + nextAverage);
         }
 
         private double GetMaxFirstPassSeconds()
         {
-            var inputMax = Math.Max(DelayInputMin, DelayInputMax);
-            var searchMax = Math.Max(DelaySearchMin, DelaySearchMax);
-            var nextMax = Math.Max(DelayNextMin, DelayNextMax);
-            return PhoneNumbersCount * (inputMax + searchMax + nextMax);
+            return PhoneNumbersCount * (DelayInputMax + DelaySearchMax + DelayNextMax);
         }
 
         private static string FormatDuration(double totalSeconds)
