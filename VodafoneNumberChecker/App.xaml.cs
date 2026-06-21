@@ -115,6 +115,7 @@ namespace VodafoneNumberChecker
 
             // Register logger first (singleton)
             services.AddSingleton<ILoggerService, FileLoggerService>();
+            services.AddSingleton<ISettingsService, SettingsService>();
 
             // Register services
             services.AddSingleton<IFileService, FileService>();

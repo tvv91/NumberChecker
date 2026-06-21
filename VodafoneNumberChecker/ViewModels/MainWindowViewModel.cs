@@ -45,7 +45,7 @@ namespace VodafoneNumberChecker.ViewModels
             _dataService = dataService;
             _simDataValidationService = simDataValidationService;
             _phoneOffersViewModel = phoneOffersViewModel;
-            _configViewModel = configViewModel ?? new ConfigViewModel();
+            _configViewModel = configViewModel ?? throw new ArgumentNullException(nameof(configViewModel));
             _logger = logger ?? new FileLoggerService();
 
             // Subscribe to navigation events to check authentication
@@ -660,9 +660,19 @@ namespace VodafoneNumberChecker.ViewModels
             try
             {
                 await _configViewModel.RefreshPhoneNumbersCountAsync(_dataService);
+                _configViewModel.BeginEditing();
+
                 var configWindow = new ConfigWindow(_configViewModel);
                 configWindow.Owner = System.Windows.Application.Current.MainWindow;
-                configWindow.ShowDialog();
+
+                if (configWindow.ShowDialog() == true)
+                {
+                    _configViewModel.CommitEditing();
+                }
+                else
+                {
+                    _configViewModel.CancelEditing();
+                }
             }
             catch (Exception ex)
             {

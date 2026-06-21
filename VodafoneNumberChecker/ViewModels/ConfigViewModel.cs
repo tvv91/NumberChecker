@@ -1,5 +1,7 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using VodafoneNumberChecker.Models;
 using VodafoneNumberChecker.Services;
 
@@ -7,18 +9,53 @@ namespace VodafoneNumberChecker.ViewModels
 {
     public class ConfigViewModel : INotifyPropertyChanged
     {
+        private readonly ISettingsService _settingsService;
+        private ProcessingConfiguration? _editSnapshot;
+
         private double _delayInputMin = 3;
         private double _delayInputMax = 5;
         private double _delaySearchMin = 3;
         private double _delaySearchMax = 5;
         private double _delayNextMin = 3;
         private double _delayNextMax = 5;
-        private int _emptyPropositionsRepeats = 0;
-        private int _errorNumbersRepeats = 0;
+        private int _emptyPropositionsRepeats;
+        private int _errorNumbersRepeats;
         private bool _is24x7Mode;
         private bool _shouldTopUpNumbers;
         private int _phoneNumbersCount;
         private string _timingValidationMessage = string.Empty;
+        private TopUpRule? _selectedTopUpRule;
+
+        public ConfigViewModel(ISettingsService settingsService)
+        {
+            _settingsService = settingsService;
+            TopUpRules = new ObservableCollection<TopUpRule>();
+            AddTopUpRuleCommand = new RelayCommand(AddTopUpRule);
+            RemoveTopUpRuleCommand = new RelayCommand(RemoveTopUpRule, () => SelectedTopUpRule != null);
+
+            LoadFromConfiguration(_settingsService.Load());
+        }
+
+        public ObservableCollection<TopUpRule> TopUpRules { get; }
+
+        public TopUpRule? SelectedTopUpRule
+        {
+            get => _selectedTopUpRule;
+            set
+            {
+                if (_selectedTopUpRule == value)
+                {
+                    return;
+                }
+
+                _selectedTopUpRule = value;
+                OnPropertyChanged();
+                ((RelayCommand)RemoveTopUpRuleCommand).RaiseCanExecuteChanged();
+            }
+        }
+
+        public ICommand AddTopUpRuleCommand { get; }
+        public ICommand RemoveTopUpRuleCommand { get; }
 
         public string TimingValidationMessage
         {
@@ -152,6 +189,28 @@ namespace VodafoneNumberChecker.ViewModels
             PhoneNumbersCount = await dataService.GetPhoneOffersCountAsync();
         }
 
+        public void BeginEditing()
+        {
+            _editSnapshot = GetConfiguration().Clone();
+        }
+
+        public void CommitEditing()
+        {
+            _settingsService.Save(GetConfiguration());
+            _editSnapshot = null;
+        }
+
+        public void CancelEditing()
+        {
+            if (_editSnapshot == null)
+            {
+                return;
+            }
+
+            LoadFromConfiguration(_editSnapshot);
+            _editSnapshot = null;
+        }
+
         public ProcessingConfiguration GetConfiguration()
         {
             return new ProcessingConfiguration
@@ -165,7 +224,8 @@ namespace VodafoneNumberChecker.ViewModels
                 EmptyPropositionsRepeats = EmptyPropositionsRepeats,
                 ErrorNumbersRepeats = ErrorNumbersRepeats,
                 Is24x7Mode = Is24x7Mode,
-                ShouldTopUpNumbers = ShouldTopUpNumbers
+                ShouldTopUpNumbers = ShouldTopUpNumbers,
+                TopUpRules = TopUpRules.Select(rule => rule.Clone()).ToList()
             };
         }
 
@@ -182,6 +242,14 @@ namespace VodafoneNumberChecker.ViewModels
             Is24x7Mode = config.Is24x7Mode;
             ShouldTopUpNumbers = config.ShouldTopUpNumbers;
             TimingValidationMessage = string.Empty;
+
+            TopUpRules.Clear();
+            foreach (var rule in config.TopUpRules)
+            {
+                TopUpRules.Add(rule.Clone());
+            }
+
+            SelectedTopUpRule = null;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -189,6 +257,22 @@ namespace VodafoneNumberChecker.ViewModels
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void AddTopUpRule()
+        {
+            TopUpRules.Add(new TopUpRule());
+        }
+
+        private void RemoveTopUpRule()
+        {
+            if (SelectedTopUpRule == null)
+            {
+                return;
+            }
+
+            TopUpRules.Remove(SelectedTopUpRule);
+            SelectedTopUpRule = null;
         }
 
         private void NotifyTimeEstimateChanged()
@@ -276,4 +360,3 @@ namespace VodafoneNumberChecker.ViewModels
         }
     }
 }
-
