@@ -88,8 +88,22 @@ namespace VodafoneNumberChecker.Services
                 return;
             }
 
-            var amount = Math.Max(1, (int)Math.Round(offer.MinTopupAmount));
+            var amount = GetReplenishmentAmountFromOffer(offer);
             await InsertReplenishmentRequestAsync(connection, simDataId.Value, amount, cancellationToken);
+        }
+
+        /// <summary>
+        /// Сумма пополнения = «Мин. пополнение» из предложения Vodafone для этого номера.
+        /// </summary>
+        private static int GetReplenishmentAmountFromOffer(PhoneOffer offer)
+        {
+            if (offer.MinTopupAmount <= 0)
+            {
+                throw new InvalidOperationException(
+                    "В предложении не указано минимальное пополнение (MinTopupAmount = 0)");
+            }
+
+            return (int)Math.Round(offer.MinTopupAmount, MidpointRounding.AwayFromZero);
         }
 
         private static async Task<int?> GetSimDataIdAsync(
@@ -138,9 +152,9 @@ namespace VodafoneNumberChecker.Services
             command.CommandText =
                 """
                 INSERT INTO ReplenishmentRequests
-                    (SimDataId, Status, Bank, Provider, Amount, AddingDate)
+                    (SimDataId, Amount, Status, Bank, AddingDate)
                 VALUES
-                    (@simDataId, 0, 0, NULL, @amount, @addingDate);
+                    (@simDataId, @amount, 0, 0, @addingDate);
                 """;
             command.Parameters.AddWithValue("@simDataId", simDataId);
             command.Parameters.AddWithValue("@amount", amount);
