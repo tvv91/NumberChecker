@@ -328,6 +328,10 @@
                             <DataGridTextColumn Header="Описание ошибки" Binding="{Binding ErrorDescription}" Width="200"/>
                             <DataGridTextColumn Header="Нет предложений" Binding="{Binding IsPropositionsNotFound, Converter={StaticResource BoolToYesNoConverter}}" Width="150" x:Name="colIsPropositionsNotFound"/>
                             <DataGridTextColumn Header="Нет подходящих" Binding="{Binding IsPropositionsNotSuitable, Converter={StaticResource BoolToYesNoConverter}}" Width="150" x:Name="colIsPropositionsNotSuitable"/>
+                            <DataGridTextColumn Header="Синхронизировано" Binding="{Binding IsTopUpSynced, Converter={StaticResource BoolToYesNoConverter}}" Width="120" CanUserSort="True" SortMemberPath="IsTopUpSynced"/>
+                            <DataGridTextColumn Header="Дата синхронизации" Binding="{Binding TopUpSyncedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140" CanUserSort="True" SortMemberPath="TopUpSyncedAt"/>
+                            <DataGridTextColumn Header="Ошибок синхр." Binding="{Binding TopUpSyncErrorCount}" Width="100" CanUserSort="True" SortMemberPath="TopUpSyncErrorCount"/>
+                            <DataGridTextColumn Header="Последняя ошибка синхр." Binding="{Binding LastTopUpSyncError}" Width="200"/>
                         </DataGrid.Columns>
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">

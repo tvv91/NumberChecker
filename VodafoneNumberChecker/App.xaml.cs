@@ -135,7 +135,21 @@ namespace VodafoneNumberChecker
                 new PhoneSearchService(
                     sp.GetRequiredService<IWebViewService>(),
                     sp.GetRequiredService<IDataService>(),
+                    sp.GetRequiredService<ITopUpSyncService>(),
                     sp.GetRequiredService<ILoggerService>()));
+            services.AddSingleton<ITopUpSyncService>(sp =>
+            {
+                var connectionString = ConfigurationManager.ConnectionStrings["ExternalSimData"]?.ConnectionString;
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException("ExternalSimData connection string is missing in App.config.");
+                }
+
+                return new TopUpSyncService(
+                    connectionString,
+                    sp.GetRequiredService<IDataService>(),
+                    sp.GetRequiredService<ILoggerService>());
+            });
 
             // Register ViewModels - PhoneOffersViewModel and ConfigViewModel must be created first
             services.AddSingleton<PhoneOffersViewModel>();

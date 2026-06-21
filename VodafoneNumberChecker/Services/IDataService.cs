@@ -34,6 +34,8 @@ namespace VodafoneNumberChecker.Services
         Task<IterationReport> SaveIterationReportAsync(IterationReport report);
         Task<List<IterationReport>> GetIterationReportsAsync();
         Task ClearIterationReportsAsync();
+        Task SetTopUpSyncSuccessAsync(int phoneOfferId);
+        Task SetTopUpSyncFailureAsync(int phoneOfferId, string error);
     }
 }
 

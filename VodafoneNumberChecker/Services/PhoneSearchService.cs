@@ -3,10 +3,11 @@ using VodafoneNumberChecker.Models;
 
 namespace VodafoneNumberChecker.Services
 {
-    public class PhoneSearchService(IWebViewService webViewService, IDataService dataService, ILoggerService logger) : IPhoneSearchService
+    public class PhoneSearchService(IWebViewService webViewService, IDataService dataService, ITopUpSyncService topUpSyncService, ILoggerService logger) : IPhoneSearchService
     {
         private readonly IWebViewService _webViewService = webViewService;
         private readonly IDataService _dataService = dataService;
+        private readonly ITopUpSyncService _topUpSyncService = topUpSyncService;
         private readonly ILoggerService _logger = logger;
         private readonly Random _rand = new();
 
@@ -290,6 +291,12 @@ namespace VodafoneNumberChecker.Services
                 await _dataService.MarkPhoneOfferAsProcessedAsync(phoneOffer.Id);
                 await _dataService.SetLastProcessedPhoneIdAsync(phoneOffer.Id);
                 progressReporter?.ReportProcessed(1);
+
+                var updatedOffer = await _dataService.GetPhoneOfferByIdAsync(phoneOffer.Id);
+                if (updatedOffer != null)
+                {
+                    await _topUpSyncService.TrySyncAsync(updatedOffer, configuration, cancellationToken);
+                }
                 
                 cancellationToken.ThrowIfCancellationRequested();
                 await DelayBeforeNextAsync(configuration, progressReporter, cancellationToken);

@@ -28,6 +28,11 @@ namespace VodafoneNumberChecker.Models
         public int IterationCount { get; set; } = 0;                // количество итераций обработки
         public bool IsPropositionsNotFound { get; set; } = false;  // предложений не найдено (текст "Пропозицій не знайдено" найден)
         public bool IsPropositionsNotSuitable { get; set; } = false; // предложения не подходят (нет "Пропозицій не знайдено", но нет процента/подарка)
+
+        public bool IsTopUpSynced { get; set; }
+        public DateTime? TopUpSyncedAt { get; set; }
+        public int TopUpSyncErrorCount { get; set; }
+        public string? LastTopUpSyncError { get; set; }
     }
 }
 

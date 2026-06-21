@@ -195,6 +195,23 @@ namespace VodafoneNumberChecker.Services
                     command.CommandText = "ALTER TABLE IterationHistories ADD COLUMN GiftsFoundCount INTEGER NOT NULL DEFAULT 0;";
                     await command.ExecuteNonQueryAsync();
                 }
+
+                await EnsurePhoneOfferColumnExistsAsync(
+                    command,
+                    "IsTopUpSynced",
+                    "ALTER TABLE PhoneOffers ADD COLUMN IsTopUpSynced INTEGER NOT NULL DEFAULT 0;");
+                await EnsurePhoneOfferColumnExistsAsync(
+                    command,
+                    "TopUpSyncedAt",
+                    "ALTER TABLE PhoneOffers ADD COLUMN TopUpSyncedAt TEXT;");
+                await EnsurePhoneOfferColumnExistsAsync(
+                    command,
+                    "TopUpSyncErrorCount",
+                    "ALTER TABLE PhoneOffers ADD COLUMN TopUpSyncErrorCount INTEGER NOT NULL DEFAULT 0;");
+                await EnsurePhoneOfferColumnExistsAsync(
+                    command,
+                    "LastTopUpSyncError",
+                    "ALTER TABLE PhoneOffers ADD COLUMN LastTopUpSyncError TEXT;");
                 
                 await connection.CloseAsync();
             }
@@ -976,6 +993,52 @@ namespace VodafoneNumberChecker.Services
             using var context = await _dbContextFactory.CreateDbContextAsync();
             await context.Database.ExecuteSqlRawAsync("DELETE FROM IterationHistoryItems;");
             await context.Database.ExecuteSqlRawAsync("DELETE FROM IterationHistories;");
+        }
+
+        public async Task SetTopUpSyncSuccessAsync(int phoneOfferId)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var offer = await context.PhoneOffers.FindAsync(phoneOfferId);
+            if (offer == null)
+            {
+                return;
+            }
+
+            offer.IsTopUpSynced = true;
+            offer.TopUpSyncedAt = DateTime.UtcNow;
+            offer.LastTopUpSyncError = null;
+            await context.SaveChangesAsync();
+        }
+
+        public async Task SetTopUpSyncFailureAsync(int phoneOfferId, string error)
+        {
+            using var context = await _dbContextFactory.CreateDbContextAsync();
+            var offer = await context.PhoneOffers.FindAsync(phoneOfferId);
+            if (offer == null)
+            {
+                return;
+            }
+
+            offer.IsTopUpSynced = false;
+            offer.TopUpSyncErrorCount++;
+            offer.LastTopUpSyncError = error;
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task EnsurePhoneOfferColumnExistsAsync(
+            System.Data.Common.DbCommand command,
+            string columnName,
+            string alterSql)
+        {
+            command.CommandText = $"SELECT COUNT(*) FROM pragma_table_info('PhoneOffers') WHERE name='{columnName}';";
+            var result = await command.ExecuteScalarAsync();
+            var count = Convert.ToInt32(result);
+
+            if (count == 0)
+            {
+                command.CommandText = alterSql;
+                await command.ExecuteNonQueryAsync();
+            }
         }
     }
 }
