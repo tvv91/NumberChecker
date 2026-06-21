@@ -151,6 +151,8 @@ namespace VodafoneNumberChecker.Services
                         PlannedCount INTEGER NOT NULL,
                         ProcessedCount INTEGER NOT NULL,
                         FoundCount INTEGER NOT NULL,
+                        PropositionsFoundCount INTEGER NOT NULL DEFAULT 0,
+                        GiftsFoundCount INTEGER NOT NULL DEFAULT 0,
                         ErrorCount INTEGER NOT NULL,
                         NotFoundCount INTEGER NOT NULL,
                         NotSuitableCount INTEGER NOT NULL,
@@ -173,6 +175,26 @@ namespace VodafoneNumberChecker.Services
                         FOREIGN KEY (IterationHistoryId) REFERENCES IterationHistories (Id) ON DELETE CASCADE
                     );";
                 await command.ExecuteNonQueryAsync();
+
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('IterationHistories') WHERE name='PropositionsFoundCount';";
+                result = await command.ExecuteScalarAsync();
+                count = Convert.ToInt32(result);
+
+                if (count == 0)
+                {
+                    command.CommandText = "ALTER TABLE IterationHistories ADD COLUMN PropositionsFoundCount INTEGER NOT NULL DEFAULT 0;";
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('IterationHistories') WHERE name='GiftsFoundCount';";
+                result = await command.ExecuteScalarAsync();
+                count = Convert.ToInt32(result);
+
+                if (count == 0)
+                {
+                    command.CommandText = "ALTER TABLE IterationHistories ADD COLUMN GiftsFoundCount INTEGER NOT NULL DEFAULT 0;";
+                    await command.ExecuteNonQueryAsync();
+                }
                 
                 await connection.CloseAsync();
             }
@@ -848,6 +870,8 @@ namespace VodafoneNumberChecker.Services
                 PlannedCount = report.PlannedCount,
                 ProcessedCount = report.ProcessedCount,
                 FoundCount = report.FoundCount,
+                PropositionsFoundCount = report.PropositionsFoundCount,
+                GiftsFoundCount = report.GiftsFoundCount,
                 ErrorCount = report.ErrorCount,
                 NotFoundCount = report.NotFoundCount,
                 NotSuitableCount = report.NotSuitableCount,
@@ -880,32 +904,71 @@ namespace VodafoneNumberChecker.Services
                 .OrderByDescending(r => r.Id)
                 .ToListAsync();
 
-            return reports.Select(r => new IterationReport
+            return reports.Select(r =>
             {
-                Id = r.Id,
-                IterationNumber = r.IterationNumber,
-                IterationLabel = r.IterationLabel,
-                StartedAt = r.StartedAt,
-                CompletedAt = r.CompletedAt,
-                PlannedCount = r.PlannedCount,
-                ProcessedCount = r.ProcessedCount,
-                FoundCount = r.FoundCount,
-                ErrorCount = r.ErrorCount,
-                NotFoundCount = r.NotFoundCount,
-                NotSuitableCount = r.NotSuitableCount,
-                NoOfferCount = r.NoOfferCount,
-                Items = new System.Collections.ObjectModel.ObservableCollection<IterationItemReport>(
-                    r.Items.Select(i => new IterationItemReport
-                    {
-                        PhoneNumber = i.PhoneNumber,
-                        Outcome = i.Outcome,
-                        DiscountPercent = i.DiscountPercent,
-                        GiftAmount = i.GiftAmount,
-                        MinTopupAmount = i.MinTopupAmount,
-                        IsError = i.IsError,
-                        ErrorDescription = i.ErrorDescription
-                    }))
+                var report = new IterationReport
+                {
+                    Id = r.Id,
+                    IterationNumber = r.IterationNumber,
+                    IterationLabel = r.IterationLabel,
+                    StartedAt = r.StartedAt,
+                    CompletedAt = r.CompletedAt,
+                    PlannedCount = r.PlannedCount,
+                    ProcessedCount = r.ProcessedCount,
+                    FoundCount = r.FoundCount,
+                    PropositionsFoundCount = r.PropositionsFoundCount,
+                    GiftsFoundCount = r.GiftsFoundCount,
+                    ErrorCount = r.ErrorCount,
+                    NotFoundCount = r.NotFoundCount,
+                    NotSuitableCount = r.NotSuitableCount,
+                    NoOfferCount = r.NoOfferCount,
+                    Items = new System.Collections.ObjectModel.ObservableCollection<IterationItemReport>(
+                        r.Items.Select(i => new IterationItemReport
+                        {
+                            PhoneNumber = i.PhoneNumber,
+                            Outcome = i.Outcome,
+                            DiscountPercent = i.DiscountPercent,
+                            GiftAmount = i.GiftAmount,
+                            MinTopupAmount = i.MinTopupAmount,
+                            IsError = i.IsError,
+                            ErrorDescription = i.ErrorDescription
+                        }))
+                };
+
+                BackfillFoundCountsFromItems(report);
+                return report;
             }).ToList();
+        }
+
+        private static void BackfillFoundCountsFromItems(IterationReport report)
+        {
+            if (report.PropositionsFoundCount != 0 || report.GiftsFoundCount != 0)
+            {
+                return;
+            }
+
+            if (report.Items.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var item in report.Items)
+            {
+                if (item.Outcome != "Найдено")
+                {
+                    continue;
+                }
+
+                if (item.DiscountPercent > 0)
+                {
+                    report.PropositionsFoundCount++;
+                }
+
+                if (item.GiftAmount > 0)
+                {
+                    report.GiftsFoundCount++;
+                }
+            }
         }
 
         public async Task ClearIterationReportsAsync()

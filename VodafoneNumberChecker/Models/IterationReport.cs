@@ -12,6 +12,8 @@ namespace VodafoneNumberChecker.Models
         public int PlannedCount { get; set; }
         public int ProcessedCount { get; set; }
         public int FoundCount { get; set; }
+        public int PropositionsFoundCount { get; set; }
+        public int GiftsFoundCount { get; set; }
         public int ErrorCount { get; set; }
         public int NotFoundCount { get; set; }
         public int NotSuitableCount { get; set; }

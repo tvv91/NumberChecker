@@ -859,6 +859,14 @@ namespace VodafoneNumberChecker.ViewModels
                 {
                     case "Найдено":
                         report.FoundCount++;
+                        if (itemReport.DiscountPercent > 0)
+                        {
+                            report.PropositionsFoundCount++;
+                        }
+                        if (itemReport.GiftAmount > 0)
+                        {
+                            report.GiftsFoundCount++;
+                        }
                         break;
                     case "Ошибка":
                         report.ErrorCount++;

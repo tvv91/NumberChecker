@@ -505,7 +505,8 @@
                             <DataGridTextColumn Header="Тип" Binding="{Binding IterationLabel}" Width="260"/>
                             <DataGridTextColumn Header="План" Binding="{Binding PlannedCount}" Width="80"/>
                             <DataGridTextColumn Header="Обработано" Binding="{Binding ProcessedCount}" Width="95"/>
-                            <DataGridTextColumn Header="Найдено" Binding="{Binding FoundCount}" Width="80"/>
+                            <DataGridTextColumn Header="Найдено предложений" Binding="{Binding PropositionsFoundCount}" Width="130"/>
+                            <DataGridTextColumn Header="Найдено подарков" Binding="{Binding GiftsFoundCount}" Width="125"/>
                             <DataGridTextColumn Header="Ошибки" Binding="{Binding ErrorCount}" Width="80"/>
                             <DataGridTextColumn Header="Нет предложений" Binding="{Binding NotFoundCount}" Width="110"/>
                             <DataGridTextColumn Header="Не подходят" Binding="{Binding NotSuitableCount}" Width="100"/>
