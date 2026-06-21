@@ -137,6 +137,7 @@
                     <CheckBox Grid.Row="0"
                               Content="Пополнять номера"
                               IsChecked="{Binding ShouldTopUpNumbers, Mode=TwoWay}"
+                              IsEnabled="{Binding IsTopUpOptionEnabled}"
                               Margin="0,0,0,12"/>
                     <CheckBox Grid.Row="1"
                               Content="Работать 24/7"
@@ -148,11 +149,20 @@
                               Padding="8">
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <DataGrid Grid.Row="0"
+                            <TextBlock Grid.Row="0"
+                                       Text="{Binding TopUpRulesValidationMessage}"
+                                       Foreground="#C0392B"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,8"
+                                       Visibility="{Binding HasTopUpRulesValidationMessage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                            <DataGrid Grid.Row="1"
                                       ItemsSource="{Binding TopUpRules}"
                                       SelectedItem="{Binding SelectedTopUpRule, Mode=TwoWay}"
                                       AutoGenerateColumns="False"
@@ -162,7 +172,8 @@
                                       SelectionMode="Single"
                                       MinHeight="120"
                                       HorizontalAlignment="Stretch"
-                                      HorizontalScrollBarVisibility="Auto">
+                                      HorizontalScrollBarVisibility="Auto"
+                                      CellEditEnding="TopUpRulesDataGrid_CellEditEnding">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="Скидка % — от"
                                                         Binding="{Binding DiscountPercentFrom, UpdateSourceTrigger=PropertyChanged}"
@@ -197,7 +208,7 @@
                                 </DataGrid.Columns>
                             </DataGrid>
 
-                            <StackPanel Grid.Row="1"
+                            <StackPanel Grid.Row="2"
                                         Orientation="Horizontal"
                                         HorizontalAlignment="Left"
                                         Margin="0,8,0,0">

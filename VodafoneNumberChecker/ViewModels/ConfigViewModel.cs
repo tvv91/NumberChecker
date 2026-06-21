@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
@@ -24,12 +25,14 @@ namespace VodafoneNumberChecker.ViewModels
         private bool _shouldTopUpNumbers;
         private int _phoneNumbersCount;
         private string _timingValidationMessage = string.Empty;
+        private string _topUpRulesValidationMessage = string.Empty;
         private TopUpRule? _selectedTopUpRule;
 
         public ConfigViewModel(ISettingsService settingsService)
         {
             _settingsService = settingsService;
             TopUpRules = new ObservableCollection<TopUpRule>();
+            TopUpRules.CollectionChanged += TopUpRules_CollectionChanged;
             AddTopUpRuleCommand = new RelayCommand(AddTopUpRule);
             RemoveTopUpRuleCommand = new RelayCommand(RemoveTopUpRule, () => SelectedTopUpRule != null);
 
@@ -74,6 +77,24 @@ namespace VodafoneNumberChecker.ViewModels
         }
 
         public bool HasTimingValidationMessage => !string.IsNullOrEmpty(TimingValidationMessage);
+
+        public string TopUpRulesValidationMessage
+        {
+            get => _topUpRulesValidationMessage;
+            private set
+            {
+                if (_topUpRulesValidationMessage == value)
+                {
+                    return;
+                }
+
+                _topUpRulesValidationMessage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasTopUpRulesValidationMessage));
+            }
+        }
+
+        public bool HasTopUpRulesValidationMessage => !string.IsNullOrEmpty(TopUpRulesValidationMessage);
 
         public double DelayInputMin
         {
@@ -148,6 +169,8 @@ namespace VodafoneNumberChecker.ViewModels
         }
 
         public bool AreIterationSlidersEnabled => !Is24x7Mode;
+
+        public bool IsTopUpOptionEnabled => TopUpRules.Count > 0;
 
         public int PhoneNumbersCount
         {
@@ -242,6 +265,7 @@ namespace VodafoneNumberChecker.ViewModels
             Is24x7Mode = config.Is24x7Mode;
             ShouldTopUpNumbers = config.ShouldTopUpNumbers;
             TimingValidationMessage = string.Empty;
+            TopUpRulesValidationMessage = string.Empty;
 
             TopUpRules.Clear();
             foreach (var rule in config.TopUpRules)
@@ -250,6 +274,48 @@ namespace VodafoneNumberChecker.ViewModels
             }
 
             SelectedTopUpRule = null;
+            UpdateTopUpOptionAvailability();
+        }
+
+        private void TopUpRules_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            UpdateTopUpOptionAvailability();
+            ValidateTopUpRules();
+        }
+
+        public bool ValidateTopUpRules()
+        {
+            for (int i = 0; i < TopUpRules.Count; i++)
+            {
+                var rule = TopUpRules[i];
+
+                if (rule.MinTopupAmountFrom <= 0)
+                {
+                    TopUpRulesValidationMessage =
+                        $"Правило {i + 1}: «Мин. пополнение — от» не может быть 0 или меньше 0";
+                    return false;
+                }
+
+                if (rule.MinTopupAmountTo <= 0)
+                {
+                    TopUpRulesValidationMessage =
+                        $"Правило {i + 1}: «Мин. пополнение — до» не может быть 0 или меньше 0";
+                    return false;
+                }
+            }
+
+            TopUpRulesValidationMessage = string.Empty;
+            return true;
+        }
+
+        private void UpdateTopUpOptionAvailability()
+        {
+            OnPropertyChanged(nameof(IsTopUpOptionEnabled));
+
+            if (!IsTopUpOptionEnabled && ShouldTopUpNumbers)
+            {
+                ShouldTopUpNumbers = false;
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
