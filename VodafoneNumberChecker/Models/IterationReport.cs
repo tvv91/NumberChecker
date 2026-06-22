@@ -21,6 +21,8 @@ namespace VodafoneNumberChecker.Models
 
         public string DurationText => FormatDuration(CompletedAt - StartedAt);
 
+        public string StartedAtText => StartedAt.ToString("yyyy-MM-dd HH:mm");
+
         private static string FormatDuration(TimeSpan duration)
         {
             if (duration.TotalHours >= 1)

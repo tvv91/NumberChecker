@@ -64,6 +64,15 @@ namespace VodafoneNumberChecker.ViewModels
                 () => _isAuthenticated && !_isScanning && IterationReports.Count > 0);
 
             IterationReports.CollectionChanged += IterationReports_CollectionChanged;
+            _configViewModel.PropertyChanged += ConfigViewModel_PropertyChanged;
+        }
+
+        private void ConfigViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ConfigViewModel.Is24x7Mode))
+            {
+                OnPropertyChanged(nameof(Is24x7Mode));
+            }
         }
 
         public ICommand ImportPhoneNumbersCommand { get; }
@@ -88,6 +97,8 @@ namespace VodafoneNumberChecker.ViewModels
         }
 
         public string ScanButtonText => IsScanning ? "Остановить" : "Старт/Продолжить";
+
+        public bool Is24x7Mode => _configViewModel.Is24x7Mode;
 
         public int TotalNumbers
         {
@@ -474,14 +485,7 @@ namespace VodafoneNumberChecker.ViewModels
             try
             {
                 _logger.LogInfo("Starting phone scan...");
-                var configuration = _configViewModel.GetConfiguration();
-                
-                // Calculate total iterations: 1 (default) + empty propositions repeats + error numbers repeats
-                int totalIterations = 1 + configuration.EmptyPropositionsRepeats + configuration.ErrorNumbersRepeats;
-                TotalIterations = totalIterations;
-                CurrentIteration = 0;
 
-                // Create cancellation token source
                 _cancellationTokenSource = new CancellationTokenSource();
                 IsScanning = true;
 
@@ -491,90 +495,48 @@ namespace VodafoneNumberChecker.ViewModels
 
                 try
                 {
-                    // Cycle 1: Default - process all unprocessed numbers
-                    CurrentIteration = 1;
-                    IterationInfo = $"Итерация {CurrentIteration} из {TotalIterations}: Обработка всех номеров";
-                    var unprocessedOffers = await _dataService.GetUnprocessedPhoneOffersAsync();
-                    
-                    if (unprocessedOffers.Count == 0 && configuration.EmptyPropositionsRepeats == 0 && configuration.ErrorNumbersRepeats == 0)
-                    {
-                        _logger.LogInfo("No unprocessed phone offers found");
-                        System.Windows.MessageBox.Show(
-                            "Нет необработанных номеров для сканирования",
-                            "Нет данных",
-                            System.Windows.MessageBoxButton.OK,
-                            System.Windows.MessageBoxImage.Information);
-                        return;
-                    }
+                    int roundNumber = 0;
 
-                    TotalNumbers = unprocessedOffers.Count;
-                    var firstReport = await ProcessPhoneOffersListAsync(
-                        unprocessedOffers,
-                        configuration,
-                        "Обработка всех номеров");
-                    await AddIterationReportAsync(firstReport);
-
-                    // Cycle 2-N: Process empty propositions (if configured)
-                    if (configuration.EmptyPropositionsRepeats > 0)
+                    while (true)
                     {
-                        for (int i = 1; i <= configuration.EmptyPropositionsRepeats; i++)
+                        roundNumber++;
+                        _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+
+                        var configuration = _configViewModel.GetConfiguration();
+                        bool mightHaveWork = await MightHaveWorkAsync(configuration);
+
+                        if (roundNumber == 1 && !mightHaveWork && !configuration.Is24x7Mode)
                         {
-                            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-                            CurrentIteration = 1 + i;
-                            IterationInfo = $"Итерация {CurrentIteration} из {TotalIterations}: Обработка пустых предложений (цикл {i}/{configuration.EmptyPropositionsRepeats})";
-                            
-                            var emptyPropositions = await _dataService.GetEmptyPropositionsAsync();
-                            if (emptyPropositions.Count == 0)
-                            {
-                                _logger.LogInfo($"No empty propositions found for iteration {i}");
-                                break;
-                            }
-
-                            TotalNumbers = emptyPropositions.Count;
-                            var emptyReport = await ProcessPhoneOffersListAsync(
-                                emptyPropositions,
-                                configuration,
-                                $"Пустые предложения (цикл {i}/{configuration.EmptyPropositionsRepeats})",
-                                excludeOnSuccess: true);
-                            await AddIterationReportAsync(emptyReport);
+                            _logger.LogInfo("No unprocessed phone offers found");
+                            System.Windows.MessageBox.Show(
+                                "Нет необработанных номеров для сканирования",
+                                "Нет данных",
+                                System.Windows.MessageBoxButton.OK,
+                                System.Windows.MessageBoxImage.Information);
+                            break;
                         }
-                    }
 
-                    // Cycle N+1 to M: Process error numbers (if configured)
-                    if (configuration.ErrorNumbersRepeats > 0)
-                    {
-                        for (int i = 1; i <= configuration.ErrorNumbersRepeats; i++)
+                        await RunScanRoundAsync(configuration, roundNumber);
+
+                        if (_phoneOffersViewModel != null)
                         {
-                            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-                            CurrentIteration = 1 + configuration.EmptyPropositionsRepeats + i;
-                            IterationInfo = $"Итерация {CurrentIteration} из {TotalIterations}: Обработка номеров с ошибками (цикл {i}/{configuration.ErrorNumbersRepeats})";
-                            
-                            var errorNumbers = await _dataService.GetErrorNumbersAsync();
-                            if (errorNumbers.Count == 0)
-                            {
-                                _logger.LogInfo($"No error numbers found for iteration {i}");
-                                break;
-                            }
-
-                            TotalNumbers = errorNumbers.Count;
-                            var errorReport = await ProcessPhoneOffersListAsync(
-                                errorNumbers,
-                                configuration,
-                                $"Номера с ошибками (цикл {i}/{configuration.ErrorNumbersRepeats})",
-                                excludeOnSuccess: true);
-                            await AddIterationReportAsync(errorReport);
+                            await _phoneOffersViewModel.LoadDataAsync();
                         }
-                    }
 
-                    // Refresh PhoneOffersViewModel
-                    if (_phoneOffersViewModel != null)
-                    {
-                        await _phoneOffersViewModel.LoadDataAsync();
-                    }
+                        if (!configuration.Is24x7Mode)
+                        {
+                            _logger.LogInfo("Phone scan completed successfully");
+                            IterationInfo = string.Empty;
+                            System.Windows.MessageBox.Show(
+                                "Обработка завершена",
+                                "^_^",
+                                System.Windows.MessageBoxButton.OK,
+                                System.Windows.MessageBoxImage.Information);
+                            break;
+                        }
 
-                    _logger.LogInfo("Phone scan completed successfully");
-                    IterationInfo = string.Empty;
-                    System.Windows.MessageBox.Show("Обработка завершена", "^_^", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                        await WaitUntilNextDailyRoundStartAsync();
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -631,6 +593,147 @@ namespace VodafoneNumberChecker.ViewModels
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);
             }
+        }
+
+        private async Task<bool> MightHaveWorkAsync(ProcessingConfiguration configuration)
+        {
+            var unprocessedOffers = await _dataService.GetUnprocessedPhoneOffersAsync();
+            return unprocessedOffers.Count > 0
+                || configuration.EmptyPropositionsRepeats > 0
+                || configuration.ErrorNumbersRepeats > 0;
+        }
+
+        private async Task<bool> RunScanRoundAsync(ProcessingConfiguration configuration, int roundNumber)
+        {
+            bool hadWork = false;
+            int totalIterations = 1 + configuration.EmptyPropositionsRepeats + configuration.ErrorNumbersRepeats;
+            TotalIterations = totalIterations;
+            string roundPrefix = configuration.Is24x7Mode ? $"Раунд {roundNumber}: " : string.Empty;
+
+            CurrentIteration = 1;
+            var unprocessedOffers = await _dataService.GetUnprocessedPhoneOffersAsync();
+
+            if (unprocessedOffers.Count > 0)
+            {
+                hadWork = true;
+                TotalNumbers = unprocessedOffers.Count;
+                IterationInfo = $"{roundPrefix}Итерация {CurrentIteration} из {TotalIterations}: Обработка всех номеров";
+
+                var firstReport = await ProcessPhoneOffersListAsync(
+                    unprocessedOffers,
+                    configuration,
+                    BuildRoundIterationLabel(configuration, roundNumber, "Обработка всех номеров"));
+                await AddIterationReportAsync(firstReport);
+            }
+
+            if (configuration.EmptyPropositionsRepeats > 0)
+            {
+                for (int i = 1; i <= configuration.EmptyPropositionsRepeats; i++)
+                {
+                    _cancellationTokenSource!.Token.ThrowIfCancellationRequested();
+                    CurrentIteration = 1 + i;
+                    IterationInfo = $"{roundPrefix}Итерация {CurrentIteration} из {TotalIterations}: Обработка пустых предложений (цикл {i}/{configuration.EmptyPropositionsRepeats})";
+
+                    var emptyPropositions = await _dataService.GetEmptyPropositionsAsync();
+                    if (emptyPropositions.Count == 0)
+                    {
+                        _logger.LogInfo($"No empty propositions found for iteration {i}");
+                        break;
+                    }
+
+                    hadWork = true;
+                    TotalNumbers = emptyPropositions.Count;
+                    var emptyReport = await ProcessPhoneOffersListAsync(
+                        emptyPropositions,
+                        configuration,
+                        BuildRoundIterationLabel(
+                            configuration,
+                            roundNumber,
+                            $"Пустые предложения (цикл {i}/{configuration.EmptyPropositionsRepeats})"),
+                        excludeOnSuccess: true);
+                    await AddIterationReportAsync(emptyReport);
+                }
+            }
+
+            if (configuration.ErrorNumbersRepeats > 0)
+            {
+                for (int i = 1; i <= configuration.ErrorNumbersRepeats; i++)
+                {
+                    _cancellationTokenSource!.Token.ThrowIfCancellationRequested();
+                    CurrentIteration = 1 + configuration.EmptyPropositionsRepeats + i;
+                    IterationInfo = $"{roundPrefix}Итерация {CurrentIteration} из {TotalIterations}: Обработка номеров с ошибками (цикл {i}/{configuration.ErrorNumbersRepeats})";
+
+                    var errorNumbers = await _dataService.GetErrorNumbersAsync();
+                    if (errorNumbers.Count == 0)
+                    {
+                        _logger.LogInfo($"No error numbers found for iteration {i}");
+                        break;
+                    }
+
+                    hadWork = true;
+                    TotalNumbers = errorNumbers.Count;
+                    var errorReport = await ProcessPhoneOffersListAsync(
+                        errorNumbers,
+                        configuration,
+                        BuildRoundIterationLabel(
+                            configuration,
+                            roundNumber,
+                            $"Номера с ошибками (цикл {i}/{configuration.ErrorNumbersRepeats})"),
+                        excludeOnSuccess: true);
+                    await AddIterationReportAsync(errorReport);
+                }
+            }
+
+            return hadWork;
+        }
+
+        private static string BuildRoundIterationLabel(ProcessingConfiguration configuration, int roundNumber, string label)
+        {
+            return configuration.Is24x7Mode ? $"Раунд {roundNumber}: {label}" : label;
+        }
+
+        private const int DailyRoundStartHour = 4;
+
+        private async Task WaitUntilNextDailyRoundStartAsync()
+        {
+            while (true)
+            {
+                _cancellationTokenSource!.Token.ThrowIfCancellationRequested();
+
+                var now = DateTime.Now;
+                var nextStart = GetNextDailyRoundStartTime(now);
+                var remaining = nextStart - now;
+
+                if (remaining <= TimeSpan.Zero)
+                {
+                    break;
+                }
+
+                IterationInfo = $"Раунд завершён. Следующий раунд: {nextStart:dd.MM.yyyy HH:mm} (осталось {FormatTimeRemaining(remaining)})";
+                var delayMs = (int)Math.Min(1000, remaining.TotalMilliseconds);
+                await Task.Delay(delayMs, _cancellationTokenSource.Token);
+            }
+        }
+
+        private static DateTime GetNextDailyRoundStartTime(DateTime now)
+        {
+            var todayAtStart = new DateTime(now.Year, now.Month, now.Day, DailyRoundStartHour, 0, 0, DateTimeKind.Local);
+            return now < todayAtStart ? todayAtStart : todayAtStart.AddDays(1);
+        }
+
+        private static string FormatTimeRemaining(TimeSpan remaining)
+        {
+            if (remaining.TotalHours >= 1)
+            {
+                return $"{(int)remaining.TotalHours} ч {remaining.Minutes} мин";
+            }
+
+            if (remaining.TotalMinutes >= 1)
+            {
+                return $"{remaining.Minutes} мин {remaining.Seconds} сек";
+            }
+
+            return $"{remaining.Seconds} сек";
         }
 
         private async Task StopScanAsync()

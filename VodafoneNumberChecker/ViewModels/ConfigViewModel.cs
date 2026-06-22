@@ -164,11 +164,8 @@ namespace VodafoneNumberChecker.ViewModels
 
                 _is24x7Mode = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(AreIterationSlidersEnabled));
             }
         }
-
-        public bool AreIterationSlidersEnabled => !Is24x7Mode;
 
         public bool IsTopUpOptionEnabled => TopUpRules.Count > 0;
 
