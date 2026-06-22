@@ -106,7 +106,7 @@
 
                     <!-- Empty Propositions Repeats -->
                     <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="8,0">
-                        <TextBlock Text="Количество циклов" HorizontalAlignment="Center" FontSize="11" Margin="0,0,0,4"/>
+                        <TextBlock Text="Количество повторов" HorizontalAlignment="Center" FontSize="11" Margin="0,0,0,4"/>
                         <Slider Minimum="0" Maximum="10" Value="{Binding EmptyPropositionsRepeats, Mode=TwoWay}" TickFrequency="1" IsSnapToTickEnabled="True" Height="20"/>
                         <TextBlock Text="{Binding EmptyPropositionsRepeats, StringFormat='{}{0}'}" HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="11"/>
                         <TextBlock Text="Повторы для пустых предложений" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,6,0,3" FontSize="12"/>
@@ -115,7 +115,7 @@
 
                     <!-- Error Numbers Repeats -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="8,0">
-                        <TextBlock Text="Количество циклов" HorizontalAlignment="Center" FontSize="11" Margin="0,0,0,4"/>
+                        <TextBlock Text="Количество повторов" HorizontalAlignment="Center" FontSize="11" Margin="0,0,0,4"/>
                         <Slider Minimum="0" Maximum="10" Value="{Binding ErrorNumbersRepeats, Mode=TwoWay}" TickFrequency="1" IsSnapToTickEnabled="True" Height="20"/>
                         <TextBlock Text="{Binding ErrorNumbersRepeats, StringFormat='{}{0}'}" HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="11"/>
                         <TextBlock Text="Повторы для номеров с ошибками" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,6,0,3" FontSize="12"/>

@@ -953,7 +953,7 @@ namespace VodafoneNumberChecker.ViewModels
                 PlannedCount = offers.Count
             };
 
-            foreach (var phoneOffer in offers)
+            foreach (var phoneOffer in offers.OrderByDescending(o => o.IsPriority).ThenBy(o => o.Id))
             {
                 // Check for cancellation
                 _cancellationTokenSource!.Token.ThrowIfCancellationRequested();

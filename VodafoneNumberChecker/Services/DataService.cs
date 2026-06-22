@@ -349,21 +349,9 @@ namespace VodafoneNumberChecker.Services
         public async Task<List<PhoneOffer>> GetUnprocessedPhoneOffersAsync()
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
-            
-            var lastProcessedId = await GetLastProcessedPhoneIdAsync();
-            
-            // Get unprocessed offers (including those with errors for retry)
-            var query = context.PhoneOffers
-                .Where(p => !p.IsProcessed || p.IsError);
-            
-            if (lastProcessedId.HasValue)
-            {
-                // Start from the next record after last processed
-                query = query.Where(p => p.Id > lastProcessedId.Value);
-            }
-            
-            return await query
-                .OrderBy(p => p.Id)
+
+            return await ApplyProcessingOrder(context.PhoneOffers
+                .Where(p => !p.IsProcessed || p.IsError))
                 .ToListAsync();
         }
 
@@ -378,26 +366,26 @@ namespace VodafoneNumberChecker.Services
             using var context = await _dbContextFactory.CreateDbContextAsync();
             
             // Get processed offers where propositions were not found (IsPropositionsNotFound = 1)
-            return await context.PhoneOffers
-                .Where(p => p.IsProcessed && 
-                           p.DiscountPercent == 0 && 
-                           p.GiftAmount == 0 && 
+            return await ApplyProcessingOrder(context.PhoneOffers
+                .Where(p => p.IsProcessed &&
+                           p.DiscountPercent == 0 &&
+                           p.GiftAmount == 0 &&
                            !p.IsError &&
-                           p.IsPropositionsNotFound)
-                .OrderBy(p => p.Id)
+                           p.IsPropositionsNotFound))
                 .ToListAsync();
         }
 
         public async Task<List<PhoneOffer>> GetErrorNumbersAsync()
         {
             using var context = await _dbContextFactory.CreateDbContextAsync();
-            
-            // Get offers with errors
-            return await context.PhoneOffers
-                .Where(p => p.IsError)
-                .OrderBy(p => p.Id)
+
+            return await ApplyProcessingOrder(context.PhoneOffers
+                .Where(p => p.IsError))
                 .ToListAsync();
         }
+
+        private static IOrderedQueryable<PhoneOffer> ApplyProcessingOrder(IQueryable<PhoneOffer> query) =>
+            query.OrderByDescending(p => p.IsPriority).ThenBy(p => p.Id);
 
         public async Task MarkPhoneOfferAsProcessedAsync(int phoneOfferId)
         {
