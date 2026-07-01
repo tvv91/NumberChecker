@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 
 namespace VodafoneNumberChecker.Services
 {
@@ -14,6 +15,7 @@ namespace VodafoneNumberChecker.Services
             CancellationToken cancellationToken = default)
         {
             var requestUri = $"https://api.telegram.org/bot{botToken}/sendDocument";
+            var messageCaption = BuildCaption(fileName, caption);
 
             using var content = new MultipartFormDataContent();
             content.Add(new StringContent(chatId), "chat_id");
@@ -21,11 +23,17 @@ namespace VodafoneNumberChecker.Services
             var fileContentPart = new ByteArrayContent(fileContent);
             fileContentPart.Headers.ContentType = new MediaTypeHeaderValue(
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            content.Add(fileContentPart, "document", fileName);
 
-            if (!string.IsNullOrWhiteSpace(caption))
+            var wireFileName = TelegramFileNameHelper.EncodeUtf8FileNameForMultipart(fileName);
+            var escapedFileName = TelegramFileNameHelper.EscapeContentDispositionFileName(wireFileName);
+            fileContentPart.Headers.TryAddWithoutValidation(
+                "Content-Disposition",
+                $"form-data; name=\"document\"; filename=\"{escapedFileName}\"");
+            content.Add(fileContentPart);
+
+            if (!string.IsNullOrWhiteSpace(messageCaption))
             {
-                content.Add(new StringContent(caption), "caption");
+                content.Add(new StringContent(messageCaption, Encoding.UTF8), "caption");
             }
 
             using var response = await httpClient.PostAsync(requestUri, content, cancellationToken);
@@ -38,6 +46,16 @@ namespace VodafoneNumberChecker.Services
             }
 
             logger.LogInfo($"Telegram document sent: {fileName}");
+        }
+
+        private static string BuildCaption(string fileName, string? caption)
+        {
+            if (string.IsNullOrWhiteSpace(caption))
+            {
+                return fileName;
+            }
+
+            return caption;
         }
     }
 }
