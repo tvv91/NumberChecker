@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Configuration;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using VodafoneNumberChecker.Data;
@@ -117,6 +118,10 @@ namespace VodafoneNumberChecker
             services.AddSingleton<ILoggerService, FileLoggerService>();
             services.AddSingleton<ISettingsService, SettingsService>();
             services.AddSingleton<IAppSettingsService, AppSettingsService>();
+            services.AddSingleton<IPhoneOffersExcelExporter, PhoneOffersExcelExporter>();
+            services.AddSingleton<ITelegramService>(sp =>
+                new TelegramService(sp.GetRequiredService<ILoggerService>(), new HttpClient()));
+            services.AddSingleton<IDailyReportService, DailyReportService>();
 
             // Register services
             services.AddSingleton<IFileService, FileService>();
@@ -166,6 +171,7 @@ namespace VodafoneNumberChecker
                     sp.GetRequiredService<IPhoneSearchService>(),
                     sp.GetRequiredService<IDataService>(),
                     sp.GetRequiredService<ISimDataValidationService>(),
+                    sp.GetRequiredService<IDailyReportService>(),
                     phoneOffersViewModel,
                     configViewModel,
                     sp.GetRequiredService<ILoggerService>());

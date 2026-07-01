@@ -18,6 +18,7 @@ namespace VodafoneNumberChecker.ViewModels
         private readonly ISimDataValidationService _simDataValidationService;
         private readonly PhoneOffersViewModel? _phoneOffersViewModel;
         private readonly ConfigViewModel _configViewModel;
+        private readonly IDailyReportService _dailyReportService;
         private readonly ILoggerService _logger;
 
         private List<string> _phoneNumbers = new();
@@ -37,13 +38,14 @@ namespace VodafoneNumberChecker.ViewModels
         private int _totalIterations = 0;
         private IterationReport? _selectedIterationReport;
 
-        public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, ISimDataValidationService simDataValidationService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null, ILoggerService? logger = null)
+        public MainWindowViewModel(IFileService fileService, IWebViewService webViewService, IPhoneSearchService phoneSearchService, IDataService dataService, ISimDataValidationService simDataValidationService, IDailyReportService dailyReportService, PhoneOffersViewModel? phoneOffersViewModel = null, ConfigViewModel? configViewModel = null, ILoggerService? logger = null)
         {
             _fileService = fileService;
             _webViewService = webViewService;
             _phoneSearchService = phoneSearchService;
             _dataService = dataService;
             _simDataValidationService = simDataValidationService;
+            _dailyReportService = dailyReportService;
             _phoneOffersViewModel = phoneOffersViewModel;
             _configViewModel = configViewModel ?? throw new ArgumentNullException(nameof(configViewModel));
             _logger = logger ?? new FileLoggerService();
@@ -516,11 +518,18 @@ namespace VodafoneNumberChecker.ViewModels
                             break;
                         }
 
+                        var roundStartedAt = DateTime.Now;
                         await RunScanRoundAsync(configuration, roundNumber);
+                        var roundCompletedAt = DateTime.Now;
 
                         if (_phoneOffersViewModel != null)
                         {
                             await _phoneOffersViewModel.LoadDataAsync();
+                        }
+
+                        if (configuration.Is24x7Mode)
+                        {
+                            await SendDailyReportSafelyAsync(roundStartedAt, roundCompletedAt);
                         }
 
                         if (!configuration.Is24x7Mode)
@@ -601,6 +610,31 @@ namespace VodafoneNumberChecker.ViewModels
             return unprocessedOffers.Count > 0
                 || configuration.EmptyPropositionsRepeats > 0
                 || configuration.ErrorNumbersRepeats > 0;
+        }
+
+        private async Task SendDailyReportSafelyAsync(DateTime roundStartedAt, DateTime roundCompletedAt)
+        {
+            try
+            {
+                IterationInfo = "Отправка отчётов в Telegram...";
+                await _dailyReportService.SendRoundReportsAsync(
+                    roundStartedAt,
+                    roundCompletedAt,
+                    _cancellationTokenSource!.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to send daily Telegram report", ex);
+                System.Windows.MessageBox.Show(
+                    $"Не удалось отправить отчёт в Telegram:\n{ex.Message}\n\nСканирование продолжится.",
+                    "Ошибка отправки отчёта",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+            }
         }
 
         private async Task<bool> RunScanRoundAsync(ProcessingConfiguration configuration, int roundNumber)
